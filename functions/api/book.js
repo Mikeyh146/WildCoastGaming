@@ -1,7 +1,7 @@
-import { CAPACITY, DURATION_BRACKETS, addHours, countOverlapping, generateReference, jsonResponse, sendConfirmationEmail } from '../_shared.js';
+import { DURATION_BRACKETS, addHours, tryAllocate, getOpeningHoursFor, generateReference, jsonResponse, sendConfirmationEmail } from '../_shared.js';
 
 // POST /api/book
-// Body: { service, date, startTime, duration, partySize, pointsTotal, name, email, phone }
+// Body: { service, date, startTime, duration, partySize, pointsTotal, gameSystem, name, email, phone }
 export async function onRequestPost({ request, env }) {
   let body;
   try {
@@ -10,7 +10,7 @@ export async function onRequestPost({ request, env }) {
     return jsonResponse({ error: 'Invalid request body' }, 400);
   }
 
-  const { service: serviceKey, date, startTime, duration: durationKey, partySize, pointsTotal, name, email, phone } = body;
+  const { service: serviceKey, date, startTime, duration: durationKey, partySize, pointsTotal, gameSystem, name, email, phone } = body;
 
   if (!serviceKey || !date || !startTime || !durationKey || !partySize || !name || !email) {
     return jsonResponse({ error: 'Missing required fields' }, 400);
@@ -19,10 +19,7 @@ export async function onRequestPost({ request, env }) {
   const bracket = DURATION_BRACKETS[durationKey];
   if (!bracket) return jsonResponse({ error: 'Invalid duration' }, 400);
 
-  const service = await env.DB
-    .prepare('SELECT * FROM services WHERE key = ?')
-    .bind(serviceKey)
-    .first();
+  const service = await env.DB.prepare('SELECT * FROM services WHERE key = ?').bind(serviceKey).first();
   if (!service) return jsonResponse({ error: 'Unknown service' }, 404);
 
   if (partySize < service.min_people || partySize > service.max_people) {
@@ -32,20 +29,20 @@ export async function onRequestPost({ request, env }) {
     return jsonResponse({ error: 'Points total is required for Warhammer bookings' }, 400);
   }
 
-  const endTime = addHours(startTime, bracket.hours);
-  const sizesToTry = service.allowed_sizes === 'both' ? ['small', 'large'] : [service.allowed_sizes];
+  const hours = getOpeningHoursFor(date);
+  if (!hours) return jsonResponse({ error: "We're closed that day — please pick Wed–Sun." }, 400);
 
-  // Re-check availability at booking time (guards against a slot filling
-  // between the customer loading the page and hitting submit).
-  let chosenSize = null;
-  for (const size of sizesToTry) {
-    const used = await countOverlapping(env.DB, date, size, startTime, endTime);
-    if (used < CAPACITY[size]) {
-      chosenSize = size;
-      break;
-    }
+  const [startHour] = startTime.split(':').map(Number);
+  if (startHour < hours.open || startHour + bracket.hours > hours.close) {
+    return jsonResponse({ error: 'That time falls outside our opening hours for the length you picked.' }, 400);
   }
-  if (!chosenSize) {
+
+  const endTime = addHours(startTime, bracket.hours);
+
+  // Re-check + allocate at booking time (guards against slots filling between
+  // page load and submit).
+  const allocation = await tryAllocate(env.DB, date, startTime, endTime, serviceKey, partySize);
+  if (!allocation) {
     return jsonResponse({ error: 'Sorry, that slot just filled up. Please pick another time.' }, 409);
   }
 
@@ -55,22 +52,23 @@ export async function onRequestPost({ request, env }) {
   await env.DB
     .prepare(
       `INSERT INTO bookings
-       (reference, service_key, table_size, date, start_time, duration_hours, end_time,
-        party_size, points_total, customer_name, customer_email, customer_phone,
+       (reference, service_key, table_size, tables_small, tables_large, date, start_time, duration_hours, end_time,
+        party_size, points_total, game_system, customer_name, customer_email, customer_phone,
         price_pp, price_total)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
-      reference, serviceKey, chosenSize, date, startTime, bracket.hours, endTime,
-      partySize, pointsTotal || null, name, email, phone || null,
+      reference, serviceKey, allocation.large > 0 && allocation.small === 0 ? 'large' : 'small',
+      allocation.small, allocation.large, date, startTime, bracket.hours, endTime,
+      partySize, pointsTotal || null, gameSystem || null, name, email, phone || null,
       bracket.pricePerPerson, priceTotal
     )
     .run();
 
   const bookingForEmail = {
     reference, service_name: service.name, date, start_time: startTime, end_time: endTime,
-    party_size: partySize, points_total: pointsTotal, customer_name: name, customer_email: email,
-    price_total: priceTotal,
+    party_size: partySize, points_total: pointsTotal, game_system: gameSystem,
+    customer_name: name, customer_email: email, price_total: priceTotal,
   };
 
   try {
@@ -80,12 +78,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   return jsonResponse({
-    reference,
-    date,
-    startTime,
-    endTime,
-    partySize,
-    priceTotal,
-    serviceName: service.name,
+    reference, date, startTime, endTime, partySize, priceTotal, serviceName: service.name,
+    tablesUsed: allocation,
   });
 }
