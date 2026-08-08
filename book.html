@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book a Table — Wild Coast Gaming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; --mist:#C8CCD1;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{
+    font-family:'Manrope',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:6vh 20px;
+  }
+  main{ width:100%; max-width:640px; }
+  a.back{ display:inline-block; margin-bottom:20px; color:var(--slate); text-decoration:none; font-size:0.85rem; }
+  a.back:hover{ color:var(--teal); }
+
+  .panel{
+    position:relative;
+    padding:40px 32px;
+    background:linear-gradient(160deg, rgba(255,255,255,0.6), rgba(200,204,209,0.28));
+    border:1px solid rgba(16,38,61,0.14);
+    border-radius:3px;
+  }
+  .frame-corner{ position:absolute; width:20px; height:20px; }
+  .frame-corner.tl{ top:-1px; left:-1px; border-top:1.5px solid var(--teal); border-left:1.5px solid var(--teal); }
+  .frame-corner.tr{ top:-1px; right:-1px; border-top:1.5px solid var(--teal); border-right:1.5px solid var(--teal); }
+  .frame-corner.bl{ bottom:-1px; left:-1px; border-bottom:1.5px solid var(--teal); border-left:1.5px solid var(--teal); }
+  .frame-corner.br{ bottom:-1px; right:-1px; border-bottom:1.5px solid var(--teal); border-right:1.5px solid var(--teal); }
+
+  h1{
+    font-family:'Orbitron',sans-serif;
+    font-size:1.6rem;
+    margin-bottom:6px;
+  }
+  .sub{ color:var(--slate); font-size:0.9rem; margin-bottom:28px; }
+
+  .step{ margin-bottom:26px; }
+  .step-label{
+    font-family:'Orbitron',sans-serif;
+    font-size:0.7rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+    display:block;
+  }
+
+  .choice-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  .choice{
+    padding:12px 18px;
+    border:1px solid rgba(16,38,61,0.25);
+    background:rgba(255,255,255,0.5);
+    clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    cursor:pointer;
+    font-size:0.88rem;
+    font-weight:600;
+    transition:all 0.2s ease;
+  }
+  .choice.selected{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .choice:hover:not(.selected){ border-color:var(--teal); }
+  .choice .price{ display:block; font-weight:400; font-size:0.76rem; opacity:0.75; margin-top:2px; }
+
+  input, select{
+    width:100%;
+    padding:12px 16px;
+    border:1px solid rgba(16,38,61,0.25);
+    background:rgba(255,255,255,0.6);
+    border-radius:3px;
+    font-family:'Manrope',sans-serif;
+    font-size:0.92rem;
+    color:var(--ink);
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--teal); }
+
+  .row{ display:flex; gap:12px; }
+  .row > *{ flex:1; }
+
+  #slots{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .slot{
+    padding:8px 14px;
+    border:1px solid rgba(51,167,183,0.5);
+    background:rgba(51,167,183,0.07);
+    clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    cursor:pointer;
+    font-size:0.85rem;
+  }
+  .slot.selected{ background:var(--teal); color:var(--bg); }
+  .empty-note{ color:var(--slate); font-size:0.85rem; }
+
+  button.primary{
+    width:100%;
+    padding:15px;
+    margin-top:10px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--bg);
+    font-family:'Orbitron',sans-serif;
+    font-size:0.8rem;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    clip-path:polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    cursor:pointer;
+    transition:background 0.2s ease;
+  }
+  button.primary:hover{ background:var(--teal); border-color:var(--teal); }
+  button.primary:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .hidden{ display:none; }
+  .error{ color:#b23b3b; font-size:0.85rem; margin-top:10px; }
+
+  .confirmation{ text-align:center; }
+  .confirmation .ref{
+    font-family:'Orbitron',sans-serif;
+    font-size:1.6rem;
+    letter-spacing:0.1em;
+    color:var(--teal);
+    margin:16px 0;
+  }
+  .confirmation dl{ text-align:left; font-size:0.9rem; margin-top:20px; }
+  .confirmation dt{ color:var(--slate); margin-top:8px; }
+  .confirmation dd{ font-weight:600; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">&larr; Back to Wild Coast Gaming</a>
+
+  <div class="panel" id="panel">
+    <span class="frame-corner tl"></span><span class="frame-corner tr"></span>
+    <span class="frame-corner bl"></span><span class="frame-corner br"></span>
+
+    <div id="form-view">
+      <h1>Book a Table</h1>
+      <p class="sub">Pick your game, your time, and we'll hold the table. Pay at the shop.</p>
+
+      <div class="step">
+        <label class="step-label">1. Table type</label>
+        <div class="choice-grid" id="service-choices"></div>
+      </div>
+
+      <div class="step" id="points-step" style="display:none;">
+        <label class="step-label">Points total</label>
+        <select id="points-total">
+          <option value="500">500</option>
+          <option value="1000">1000</option>
+          <option value="1500">1500</option>
+          <option value="2000">2000</option>
+          <option value="3000+">3000+</option>
+        </select>
+      </div>
+
+      <div class="step">
+        <label class="step-label">2. Party size</label>
+        <input type="number" id="party-size" min="1" value="1">
+      </div>
+
+      <div class="step">
+        <label class="step-label">3. Booking length</label>
+        <div class="choice-grid" id="duration-choices">
+          <div class="choice" data-duration="3.5">Up to 3.5 hrs<span class="price">£4pp</span></div>
+          <div class="choice" data-duration="7.5">5–7.5 hrs<span class="price">£6.50pp</span></div>
+          <div class="choice" data-duration="10">7.5–10 hrs<span class="price">£9pp</span></div>
+          <div class="choice" data-duration="12">10–12 hrs<span class="price">£12pp</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <label class="step-label">4. Date</label>
+        <input type="date" id="booking-date">
+      </div>
+
+      <button class="primary" id="check-availability">Check Availability</button>
+
+      <div class="step hidden" id="slots-step">
+        <label class="step-label">5. Choose a time</label>
+        <div id="slots"></div>
+        <p class="empty-note hidden" id="no-slots">No availability that day — try another date.</p>
+      </div>
+
+      <div class="step hidden" id="contact-step">
+        <label class="step-label">6. Your details</label>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <input type="text" id="cust-name" placeholder="Name">
+          <input type="email" id="cust-email" placeholder="Email">
+          <input type="tel" id="cust-phone" placeholder="Phone (optional)">
+        </div>
+        <button class="primary" id="submit-booking" style="margin-top:16px;">Confirm Booking</button>
+        <p class="error hidden" id="booking-error"></p>
+      </div>
+    </div>
+
+    <div id="confirmation-view" class="confirmation hidden">
+      <h1>You're booked!</h1>
+      <p class="sub">Show this at the shop, or just give your name.</p>
+      <div class="ref" id="conf-ref"></div>
+      <dl>
+        <dt>Table</dt><dd id="conf-service"></dd>
+        <dt>Date &amp; time</dt><dd id="conf-time"></dd>
+        <dt>Party size</dt><dd id="conf-party"></dd>
+        <dt>Total to pay in-shop</dt><dd id="conf-price"></dd>
+      </dl>
+    </div>
+  </div>
+</main>
+
+<script>
+const SERVICES = [
+  { key: 'warhammer', name: 'Warhammer Table', min: 1, max: 2, needsPoints: true },
+  { key: 'tcg', name: 'Trading Card Games', min: 1, max: 8, needsPoints: false },
+  { key: 'casual', name: 'Casual Table', min: 1, max: 8, needsPoints: false },
+  { key: 'dnd', name: 'D&D / RPG Table', min: 1, max: 12, needsPoints: false },
+];
+
+let selectedService = null;
+let selectedDuration = null;
+let selectedSlot = null;
+
+const serviceChoicesEl = document.getElementById('service-choices');
+SERVICES.forEach(s => {
+  const el = document.createElement('div');
+  el.className = 'choice';
+  el.textContent = s.name;
+  el.dataset.key = s.key;
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#service-choices .choice').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedService = s;
+    document.getElementById('points-step').style.display = s.needsPoints ? 'block' : 'none';
+    document.getElementById('party-size').min = s.min;
+    document.getElementById('party-size').max = s.max;
+    document.getElementById('party-size').value = s.min;
+  });
+  serviceChoicesEl.appendChild(el);
+});
+
+document.querySelectorAll('#duration-choices .choice').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#duration-choices .choice').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedDuration = el.dataset.duration;
+  });
+});
+
+document.getElementById('booking-date').min = new Date().toISOString().split('T')[0];
+
+document.getElementById('check-availability').addEventListener('click', async () => {
+  const date = document.getElementById('booking-date').value;
+  if (!selectedService || !selectedDuration || !date) {
+    alert('Please choose a table type, booking length, and date first.');
+    return;
+  }
+
+  const res = await fetch(`/api/availability?service=${selectedService.key}&date=${date}&duration=${selectedDuration}`);
+  const data = await res.json();
+
+  const slotsStep = document.getElementById('slots-step');
+  const slotsEl = document.getElementById('slots');
+  const noSlotsEl = document.getElementById('no-slots');
+  slotsStep.classList.remove('hidden');
+  slotsEl.innerHTML = '';
+  selectedSlot = null;
+  document.getElementById('contact-step').classList.add('hidden');
+
+  if (!data.slots || data.slots.length === 0) {
+    noSlotsEl.classList.remove('hidden');
+    return;
+  }
+  noSlotsEl.classList.add('hidden');
+
+  data.slots.forEach(slot => {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.textContent = slot.startTime;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedSlot = slot;
+      document.getElementById('contact-step').classList.remove('hidden');
+    });
+    slotsEl.appendChild(el);
+  });
+});
+
+document.getElementById('submit-booking').addEventListener('click', async () => {
+  const name = document.getElementById('cust-name').value.trim();
+  const email = document.getElementById('cust-email').value.trim();
+  const phone = document.getElementById('cust-phone').value.trim();
+  const partySize = parseInt(document.getElementById('party-size').value, 10);
+  const pointsTotal = selectedService.needsPoints ? document.getElementById('points-total').value : null;
+  const errorEl = document.getElementById('booking-error');
+  errorEl.classList.add('hidden');
+
+  if (!name || !email || !selectedSlot) {
+    errorEl.textContent = 'Please fill in your name, email, and pick a time slot.';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  const res = await fetch('/api/book', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service: selectedService.key,
+      date: document.getElementById('booking-date').value,
+      startTime: selectedSlot.startTime,
+      duration: selectedDuration,
+      partySize,
+      pointsTotal,
+      name, email, phone,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    errorEl.textContent = data.error || 'Something went wrong — please try again.';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('form-view').classList.add('hidden');
+  document.getElementById('confirmation-view').classList.remove('hidden');
+  document.getElementById('conf-ref').textContent = data.reference;
+  document.getElementById('conf-service').textContent = data.serviceName;
+  document.getElementById('conf-time').textContent = `${data.date} · ${data.startTime}–${data.endTime}`;
+  document.getElementById('conf-party').textContent = data.partySize;
+  document.getElementById('conf-price').textContent = `£${data.priceTotal.toFixed(2)}`;
+});
+</script>
+</body>
+</html>

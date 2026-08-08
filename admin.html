@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookings Admin — Wild Coast Gaming</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ font-family:'Manrope',sans-serif; background:var(--bg); color:var(--ink); padding:30px 20px; }
+  h1{ font-family:'Orbitron',sans-serif; font-size:1.4rem; margin-bottom:20px; }
+  #login{ max-width:320px; margin:80px auto; text-align:center; }
+  #login input{ width:100%; padding:12px; margin:12px 0; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
+  #login button, .refresh{ padding:12px 20px; background:var(--ink); color:var(--bg); border:none; border-radius:3px; font-family:'Orbitron',sans-serif; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; }
+  #login button:hover, .refresh:hover{ background:var(--teal); }
+
+  table{ width:100%; border-collapse:collapse; margin-top:20px; font-size:0.85rem; background:rgba(255,255,255,0.5); }
+  th, td{ text-align:left; padding:10px 12px; border-bottom:1px solid rgba(16,38,61,0.12); }
+  th{ font-family:'Orbitron',sans-serif; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--slate); }
+  .filters{ display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+  .filters input{ padding:8px 12px; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
+  .hidden{ display:none; }
+  .empty{ color:var(--slate); padding:20px 0; }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>Bookings Admin</h1>
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="login()">View Bookings</button>
+  <p class="empty" id="login-error"></p>
+</div>
+
+<div id="dashboard" class="hidden">
+  <h1>Upcoming Bookings — Wild Coast Gaming</h1>
+  <div class="filters">
+    <label>From <input type="date" id="from-date"></label>
+    <label>To <input type="date" id="to-date"></label>
+    <button class="refresh" onclick="loadBookings()">Refresh</button>
+  </div>
+  <div id="results"></div>
+</div>
+
+<script>
+let password = '';
+
+function login() {
+  password = document.getElementById('password').value;
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('from-date').value = today;
+  loadBookings();
+}
+
+async function loadBookings() {
+  const from = document.getElementById('from-date').value;
+  const to = document.getElementById('to-date').value;
+  const params = new URLSearchParams({ password });
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+
+  const res = await fetch(`/api/admin-bookings?${params}`);
+  if (res.status === 401) {
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
+    document.getElementById('login-error').textContent = 'Wrong password.';
+    return;
+  }
+
+  const data = await res.json();
+  const resultsEl = document.getElementById('results');
+
+  if (!data.bookings || data.bookings.length === 0) {
+    resultsEl.innerHTML = '<p class="empty">No bookings in this range.</p>';
+    return;
+  }
+
+  const rows = data.bookings.map(b => `
+    <tr>
+      <td>${b.date}</td>
+      <td>${b.start_time}–${b.end_time}</td>
+      <td>${b.service_name}</td>
+      <td>${b.table_size}</td>
+      <td>${b.party_size}</td>
+      <td>${b.points_total || '—'}</td>
+      <td>${b.customer_name}<br><span style="color:#4B5663;">${b.customer_email}</span></td>
+      <td>${b.reference}</td>
+      <td>£${b.price_total.toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  resultsEl.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Time</th><th>Table</th><th>Size</th><th>Party</th>
+        <th>Points</th><th>Customer</th><th>Ref</th><th>Total</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+</script>
+</body>
+</html>
