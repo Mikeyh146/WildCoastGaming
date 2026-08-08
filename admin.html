@@ -3,103 +3,248 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bookings Admin — Wild Coast Gaming</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Staff Hub — Wild Coast Gaming</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{ --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; }
+  :root{ --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; --mist:#C8CCD1; }
   *{ margin:0; padding:0; box-sizing:border-box; }
-  body{ font-family:'Manrope',sans-serif; background:var(--bg); color:var(--ink); padding:30px 20px; }
-  h1{ font-family:'Orbitron',sans-serif; font-size:1.4rem; margin-bottom:20px; }
+  body{ font-family:'Manrope',sans-serif; background:var(--bg); color:var(--ink); padding:24px 18px 60px; }
+  h1{ font-family:'Orbitron',sans-serif; font-size:1.3rem; margin-bottom:4px; }
+  .sub{ color:var(--slate); font-size:0.85rem; margin-bottom:20px; }
+
   #login{ max-width:320px; margin:80px auto; text-align:center; }
   #login input{ width:100%; padding:12px; margin:12px 0; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
-  #login button, .refresh{ padding:12px 20px; background:var(--ink); color:var(--bg); border:none; border-radius:3px; font-family:'Orbitron',sans-serif; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; }
-  #login button:hover, .refresh:hover{ background:var(--teal); }
+  button{ padding:11px 18px; background:var(--ink); color:var(--bg); border:none; border-radius:3px; font-family:'Orbitron',sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; }
+  button:hover{ background:var(--teal); }
+  button.danger:hover{ background:#b23b3b; }
+  button.ghost{ background:transparent; color:var(--ink); border:1px solid rgba(16,38,61,0.3); }
+  button.ghost:hover{ background:rgba(16,38,61,0.06); color:var(--ink); }
+  .error{ color:#b23b3b; font-size:0.85rem; }
 
-  table{ width:100%; border-collapse:collapse; margin-top:20px; font-size:0.85rem; background:rgba(255,255,255,0.5); }
-  th, td{ text-align:left; padding:10px 12px; border-bottom:1px solid rgba(16,38,61,0.12); }
-  th{ font-family:'Orbitron',sans-serif; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--slate); }
-  .filters{ display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
-  .filters input{ padding:8px 12px; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
   .hidden{ display:none; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .tab{ padding:9px 16px; border:1px solid rgba(16,38,61,0.25); background:rgba(255,255,255,0.5); cursor:pointer; font-size:0.8rem; font-weight:600; border-radius:3px; }
+  .tab.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+
+  .cards{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:26px; }
+  .card{ background:rgba(255,255,255,0.6); border:1px solid rgba(16,38,61,0.14); border-radius:4px; padding:16px; }
+  .card .label{ font-family:'Orbitron',sans-serif; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--slate); margin-bottom:6px; }
+  .card .value{ font-size:1.5rem; font-weight:700; }
+  .card.warn .value{ color:#b23b3b; }
+  .card.good .value{ color:var(--teal); }
+
+  table{ width:100%; border-collapse:collapse; font-size:0.83rem; background:rgba(255,255,255,0.5); }
+  th, td{ text-align:left; padding:9px 10px; border-bottom:1px solid rgba(16,38,61,0.1); vertical-align:top; }
+  th{ font-family:'Orbitron',sans-serif; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--slate); }
+  tr.cancelled{ opacity:0.45; text-decoration:line-through; }
+  .actions-cell{ display:flex; gap:6px; flex-wrap:wrap; }
+  .actions-cell button{ padding:6px 10px; font-size:0.62rem; }
+  .badge{ display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.68rem; font-weight:700; }
+  .badge.paid{ background:rgba(51,167,183,0.15); color:var(--teal); }
+  .badge.unpaid{ background:rgba(178,59,59,0.12); color:#b23b3b; }
+
+  .filters{ display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .filters input, .filters label{ font-size:0.82rem; }
+  .filters input{ padding:8px 10px; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
+  .table-wrap{ overflow-x:auto; }
   .empty{ color:var(--slate); padding:20px 0; }
+  .section-title{ font-family:'Orbitron',sans-serif; font-size:0.9rem; margin:24px 0 10px; }
 </style>
 </head>
 <body>
 
 <div id="login">
-  <h1>Bookings Admin</h1>
+  <h1>Staff Hub</h1>
+  <p class="sub">Wild Coast Gaming</p>
   <input type="password" id="password" placeholder="Password">
-  <button onclick="login()">View Bookings</button>
-  <p class="empty" id="login-error"></p>
+  <button onclick="login()">Enter</button>
+  <p class="error" id="login-error"></p>
 </div>
 
-<div id="dashboard" class="hidden">
-  <h1>Upcoming Bookings — Wild Coast Gaming</h1>
-  <div class="filters">
-    <label>From <input type="date" id="from-date"></label>
-    <label>To <input type="date" id="to-date"></label>
-    <button class="refresh" onclick="loadBookings()">Refresh</button>
+<div id="dashboard-app" class="hidden">
+  <h1>Staff Hub</h1>
+  <p class="sub">Wild Coast Gaming — bookings, payments, and customers</p>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Dashboard</div>
+    <div class="tab" data-tab="bookings">Bookings</div>
+    <div class="tab" data-tab="clients">Clients</div>
   </div>
-  <div id="results"></div>
+
+  <!-- OVERVIEW -->
+  <div id="tab-overview">
+    <div class="cards" id="overview-cards"></div>
+    <div class="section-title">Today's Bookings</div>
+    <div class="table-wrap"><table id="today-table"><thead></thead><tbody></tbody></table></div>
+    <div class="section-title">Revenue by Table Type</div>
+    <div class="table-wrap"><table id="service-table"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <!-- BOOKINGS -->
+  <div id="tab-bookings" class="hidden">
+    <div class="filters">
+      <label>From <input type="date" id="from-date"></label>
+      <label>To <input type="date" id="to-date"></label>
+      <label><input type="checkbox" id="show-cancelled"> Show cancelled</label>
+      <button class="ghost" onclick="loadBookings()">Refresh</button>
+    </div>
+    <div class="table-wrap"><table id="bookings-table"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <!-- CLIENTS -->
+  <div id="tab-clients" class="hidden">
+    <div class="table-wrap"><table id="clients-table"><thead></thead><tbody></tbody></table></div>
+  </div>
 </div>
 
 <script>
 let password = '';
 
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    ['overview', 'bookings', 'clients'].forEach(name => {
+      document.getElementById('tab-' + name).classList.toggle('hidden', name !== tab.dataset.tab);
+    });
+    if (tab.dataset.tab === 'overview') loadOverview();
+    if (tab.dataset.tab === 'bookings') loadBookings();
+    if (tab.dataset.tab === 'clients') loadClients();
+  });
+});
+
 function login() {
   password = document.getElementById('password').value;
-  document.getElementById('login').classList.add('hidden');
-  document.getElementById('dashboard').classList.remove('hidden');
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('from-date').value = today;
-  loadBookings();
+  fetch(`/api/admin-dashboard?password=${encodeURIComponent(password)}`)
+    .then(r => {
+      if (r.status === 401) throw new Error('bad password');
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('dashboard-app').classList.remove('hidden');
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('from-date').value = today;
+      loadOverview();
+    })
+    .catch(() => {
+      document.getElementById('login-error').textContent = 'Wrong password.';
+    });
+}
+
+async function loadOverview() {
+  const res = await fetch(`/api/admin-dashboard?password=${encodeURIComponent(password)}`);
+  const data = await res.json();
+  const t = data.totals;
+
+  document.getElementById('overview-cards').innerHTML = `
+    <div class="card good"><div class="label">Revenue Collected</div><div class="value">£${t.revenue_collected.toFixed(2)}</div></div>
+    <div class="card warn"><div class="label">Outstanding</div><div class="value">£${t.outstanding.toFixed(2)}</div></div>
+    <div class="card"><div class="label">Upcoming Bookings</div><div class="value">${t.upcoming_count}</div></div>
+    <div class="card"><div class="label">Today</div><div class="value">${t.today_count}</div></div>
+  `;
+
+  const todayTable = document.getElementById('today-table');
+  if (data.todaysBookings.length === 0) {
+    todayTable.innerHTML = '<tbody><tr><td class="empty">Nothing booked today.</td></tr></tbody>';
+  } else {
+    todayTable.innerHTML = `
+      <thead><tr><th>Time</th><th>Table</th><th>Party</th><th>Customer</th><th>Paid</th></tr></thead>
+      <tbody>${data.todaysBookings.map(b => `
+        <tr>
+          <td>${b.start_time}–${b.end_time}</td>
+          <td>${b.service_name}</td>
+          <td>${b.party_size}</td>
+          <td>${b.customer_name}</td>
+          <td><span class="badge ${b.paid ? 'paid' : 'unpaid'}">${b.paid ? 'Paid' : 'Unpaid'}</span></td>
+        </tr>`).join('')}</tbody>
+    `;
+  }
+
+  const serviceTable = document.getElementById('service-table');
+  serviceTable.innerHTML = `
+    <thead><tr><th>Table</th><th>Bookings</th><th>Revenue</th></tr></thead>
+    <tbody>${data.byService.map(s => `
+      <tr><td>${s.service_name}</td><td>${s.bookings}</td><td>£${s.revenue.toFixed(2)}</td></tr>
+    `).join('')}</tbody>
+  `;
 }
 
 async function loadBookings() {
   const from = document.getElementById('from-date').value;
   const to = document.getElementById('to-date').value;
+  const includeCancelled = document.getElementById('show-cancelled').checked;
   const params = new URLSearchParams({ password });
   if (from) params.set('from', from);
   if (to) params.set('to', to);
+  if (includeCancelled) params.set('includeCancelled', '1');
 
   const res = await fetch(`/api/admin-bookings?${params}`);
-  if (res.status === 401) {
-    document.getElementById('dashboard').classList.add('hidden');
-    document.getElementById('login').classList.remove('hidden');
-    document.getElementById('login-error').textContent = 'Wrong password.';
-    return;
-  }
-
   const data = await res.json();
-  const resultsEl = document.getElementById('results');
+  const table = document.getElementById('bookings-table');
 
   if (!data.bookings || data.bookings.length === 0) {
-    resultsEl.innerHTML = '<p class="empty">No bookings in this range.</p>';
+    table.innerHTML = '<tbody><tr><td class="empty">No bookings in this range.</td></tr></tbody>';
     return;
   }
 
-  const rows = data.bookings.map(b => `
-    <tr>
-      <td>${b.date}</td>
-      <td>${b.start_time}–${b.end_time}</td>
-      <td>${b.service_name}</td>
-      <td>${b.table_size}</td>
-      <td>${b.party_size}</td>
-      <td>${b.points_total || '—'}</td>
-      <td>${b.customer_name}<br><span style="color:#4B5663;">${b.customer_email}</span></td>
-      <td>${b.reference}</td>
-      <td>£${b.price_total.toFixed(2)}</td>
-    </tr>
-  `).join('');
+  table.innerHTML = `
+    <thead><tr>
+      <th>Date</th><th>Time</th><th>Table</th><th>Party</th><th>Points</th>
+      <th>Customer</th><th>Ref</th><th>Total</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${data.bookings.map(b => `
+      <tr class="${b.status === 'cancelled' ? 'cancelled' : ''}">
+        <td>${b.date}</td>
+        <td>${b.start_time}–${b.end_time}</td>
+        <td>${b.service_name} <br><span style="color:#4B5663;font-size:0.75rem;">${b.table_size}</span></td>
+        <td>${b.party_size}</td>
+        <td>${b.points_total || '—'}</td>
+        <td>${b.customer_name}<br><span style="color:#4B5663;">${b.customer_email}</span></td>
+        <td>${b.reference}</td>
+        <td>£${b.price_total.toFixed(2)}<br><span class="badge ${b.paid ? 'paid' : 'unpaid'}">${b.paid ? 'Paid' : 'Unpaid'}</span></td>
+        <td>${b.status}</td>
+        <td class="actions-cell">
+          ${b.status !== 'cancelled' ? `
+            <button class="ghost" onclick="doAction(${b.id}, '${b.paid ? 'mark-unpaid' : 'mark-paid'}')">${b.paid ? 'Mark Unpaid' : 'Mark Paid'}</button>
+            <button class="danger" onclick="doAction(${b.id}, 'cancel')">Cancel</button>
+          ` : ''}
+        </td>
+      </tr>
+    `).join('')}</tbody>
+  `;
+}
 
-  resultsEl.innerHTML = `
-    <table>
-      <thead><tr>
-        <th>Date</th><th>Time</th><th>Table</th><th>Size</th><th>Party</th>
-        <th>Points</th><th>Customer</th><th>Ref</th><th>Total</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
+async function doAction(id, action) {
+  if (action === 'cancel' && !confirm('Cancel this booking?')) return;
+  await fetch('/api/admin-action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password, id, action }),
+  });
+  loadBookings();
+}
+
+async function loadClients() {
+  const res = await fetch(`/api/admin-clients?password=${encodeURIComponent(password)}`);
+  const data = await res.json();
+  const table = document.getElementById('clients-table');
+
+  if (!data.clients || data.clients.length === 0) {
+    table.innerHTML = '<tbody><tr><td class="empty">No clients yet.</td></tr></tbody>';
+    return;
+  }
+
+  table.innerHTML = `
+    <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Bookings</th><th>Total Spent</th><th>Last Booking</th></tr></thead>
+    <tbody>${data.clients.map(c => `
+      <tr>
+        <td>${c.customer_name}</td>
+        <td>${c.customer_email}</td>
+        <td>${c.customer_phone || '—'}</td>
+        <td>${c.total_bookings}</td>
+        <td>£${c.total_spent.toFixed(2)}</td>
+        <td>${c.last_booking_date}</td>
+      </tr>
+    `).join('')}</tbody>
   `;
 }
 </script>
