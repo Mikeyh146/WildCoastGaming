@@ -97,3 +97,10 @@ export async function sendConfirmationEmail(env, booking) {
     body: JSON.stringify(body),
   });
 }
+
+// Shared admin-password check. Accepts the password from either a query
+// string (?password=...) or a JSON body ({ password: ... }), so both GET
+// and POST admin endpoints can use it the same way.
+export function isAdminAuthed(env, password) {
+  return !!env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD;
+}
