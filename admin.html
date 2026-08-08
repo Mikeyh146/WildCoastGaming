@@ -188,14 +188,15 @@ async function loadBookings() {
 
   table.innerHTML = `
     <thead><tr>
-      <th>Date</th><th>Time</th><th>Table</th><th>Party</th><th>Points</th>
+      <th>Date</th><th>Time</th><th>Table</th><th>Tables Used</th><th>Party</th><th>Points</th>
       <th>Customer</th><th>Ref</th><th>Total</th><th>Status</th><th>Actions</th>
     </tr></thead>
     <tbody>${data.bookings.map(b => `
       <tr class="${b.status === 'cancelled' ? 'cancelled' : ''}">
         <td>${b.date}</td>
         <td>${b.start_time}–${b.end_time}</td>
-        <td>${b.service_name} <br><span style="color:#4B5663;font-size:0.75rem;">${b.table_size}</span></td>
+        <td>${b.service_name}${b.game_system ? `<br><span style="color:#4B5663;font-size:0.75rem;">${b.game_system}</span>` : ''}</td>
+        <td>${[b.tables_small ? `${b.tables_small} small` : '', b.tables_large ? `${b.tables_large} large` : ''].filter(Boolean).join(' + ') || '—'}</td>
         <td>${b.party_size}</td>
         <td>${b.points_total || '—'}</td>
         <td>${b.customer_name}<br><span style="color:#4B5663;">${b.customer_email}</span></td>
