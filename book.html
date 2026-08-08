@@ -8,125 +8,49 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; --mist:#C8CCD1;
-  }
+  :root{ --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; --mist:#C8CCD1; }
   *{ margin:0; padding:0; box-sizing:border-box; }
-  body{
-    font-family:'Manrope',sans-serif;
-    background:var(--bg);
-    color:var(--ink);
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    padding:6vh 20px;
-  }
+  body{ font-family:'Manrope',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; display:flex; justify-content:center; padding:6vh 20px; }
   main{ width:100%; max-width:640px; }
   a.back{ display:inline-block; margin-bottom:20px; color:var(--slate); text-decoration:none; font-size:0.85rem; }
   a.back:hover{ color:var(--teal); }
 
-  .panel{
-    position:relative;
-    padding:40px 32px;
-    background:linear-gradient(160deg, rgba(255,255,255,0.6), rgba(200,204,209,0.28));
-    border:1px solid rgba(16,38,61,0.14);
-    border-radius:3px;
-  }
+  .panel{ position:relative; padding:40px 32px; background:linear-gradient(160deg, rgba(255,255,255,0.6), rgba(200,204,209,0.28)); border:1px solid rgba(16,38,61,0.14); border-radius:3px; }
   .frame-corner{ position:absolute; width:20px; height:20px; }
   .frame-corner.tl{ top:-1px; left:-1px; border-top:1.5px solid var(--teal); border-left:1.5px solid var(--teal); }
   .frame-corner.tr{ top:-1px; right:-1px; border-top:1.5px solid var(--teal); border-right:1.5px solid var(--teal); }
   .frame-corner.bl{ bottom:-1px; left:-1px; border-bottom:1.5px solid var(--teal); border-left:1.5px solid var(--teal); }
   .frame-corner.br{ bottom:-1px; right:-1px; border-bottom:1.5px solid var(--teal); border-right:1.5px solid var(--teal); }
 
-  h1{
-    font-family:'Orbitron',sans-serif;
-    font-size:1.6rem;
-    margin-bottom:6px;
-  }
+  h1{ font-family:'Orbitron',sans-serif; font-size:1.6rem; margin-bottom:6px; }
   .sub{ color:var(--slate); font-size:0.9rem; margin-bottom:28px; }
 
   .step{ margin-bottom:26px; }
-  .step-label{
-    font-family:'Orbitron',sans-serif;
-    font-size:0.7rem;
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-    color:var(--teal);
-    margin-bottom:10px;
-    display:block;
-  }
+  .step-label{ font-family:'Orbitron',sans-serif; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--teal); margin-bottom:10px; display:block; }
 
   .choice-grid{ display:flex; flex-wrap:wrap; gap:10px; }
-  .choice{
-    padding:12px 18px;
-    border:1px solid rgba(16,38,61,0.25);
-    background:rgba(255,255,255,0.5);
-    clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-    cursor:pointer;
-    font-size:0.88rem;
-    font-weight:600;
-    transition:all 0.2s ease;
-  }
+  .choice{ padding:12px 18px; border:1px solid rgba(16,38,61,0.25); background:rgba(255,255,255,0.5); clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); cursor:pointer; font-size:0.88rem; font-weight:600; transition:all 0.2s ease; }
   .choice.selected{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
   .choice:hover:not(.selected){ border-color:var(--teal); }
   .choice .price{ display:block; font-weight:400; font-size:0.76rem; opacity:0.75; margin-top:2px; }
 
-  input, select{
-    width:100%;
-    padding:12px 16px;
-    border:1px solid rgba(16,38,61,0.25);
-    background:rgba(255,255,255,0.6);
-    border-radius:3px;
-    font-family:'Manrope',sans-serif;
-    font-size:0.92rem;
-    color:var(--ink);
-  }
+  input, select{ width:100%; padding:12px 16px; border:1px solid rgba(16,38,61,0.25); background:rgba(255,255,255,0.6); border-radius:3px; font-family:'Manrope',sans-serif; font-size:0.92rem; color:var(--ink); }
   input:focus, select:focus{ outline:none; border-color:var(--teal); }
 
-  .row{ display:flex; gap:12px; }
-  .row > *{ flex:1; }
-
   #slots{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-  .slot{
-    padding:8px 14px;
-    border:1px solid rgba(51,167,183,0.5);
-    background:rgba(51,167,183,0.07);
-    clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-    cursor:pointer;
-    font-size:0.85rem;
-  }
+  .slot{ padding:8px 14px; border:1px solid rgba(51,167,183,0.5); background:rgba(51,167,183,0.07); clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); cursor:pointer; font-size:0.85rem; }
   .slot.selected{ background:var(--teal); color:var(--bg); }
   .empty-note{ color:var(--slate); font-size:0.85rem; }
+  .closed-note{ color:#b23b3b; font-size:0.85rem; }
 
-  button.primary{
-    width:100%;
-    padding:15px;
-    margin-top:10px;
-    border:1px solid var(--ink);
-    background:var(--ink);
-    color:var(--bg);
-    font-family:'Orbitron',sans-serif;
-    font-size:0.8rem;
-    letter-spacing:0.05em;
-    text-transform:uppercase;
-    clip-path:polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
-    cursor:pointer;
-    transition:background 0.2s ease;
-  }
+  button.primary{ width:100%; padding:15px; margin-top:10px; border:1px solid var(--ink); background:var(--ink); color:var(--bg); font-family:'Orbitron',sans-serif; font-size:0.8rem; letter-spacing:0.05em; text-transform:uppercase; clip-path:polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); cursor:pointer; transition:background 0.2s ease; }
   button.primary:hover{ background:var(--teal); border-color:var(--teal); }
-  button.primary:disabled{ opacity:0.4; cursor:not-allowed; }
 
   .hidden{ display:none; }
   .error{ color:#b23b3b; font-size:0.85rem; margin-top:10px; }
 
   .confirmation{ text-align:center; }
-  .confirmation .ref{
-    font-family:'Orbitron',sans-serif;
-    font-size:1.6rem;
-    letter-spacing:0.1em;
-    color:var(--teal);
-    margin:16px 0;
-  }
+  .confirmation .ref{ font-family:'Orbitron',sans-serif; font-size:1.6rem; letter-spacing:0.1em; color:var(--teal); margin:16px 0; }
   .confirmation dl{ text-align:left; font-size:0.9rem; margin-top:20px; }
   .confirmation dt{ color:var(--slate); margin-top:8px; }
   .confirmation dd{ font-weight:600; }
@@ -142,14 +66,19 @@
 
     <div id="form-view">
       <h1>Book a Table</h1>
-      <p class="sub">Pick your game, your time, and we'll hold the table. Pay at the shop.</p>
+      <p class="sub">Pick your game, your time, and we'll hold the table. Pay at the shop. Open Wed–Sun, 10am–10pm.</p>
 
       <div class="step">
         <label class="step-label">1. Table type</label>
         <div class="choice-grid" id="service-choices"></div>
       </div>
 
-      <div class="step" id="points-step" style="display:none;">
+      <div class="step hidden" id="system-step">
+        <label class="step-label">Which game?</label>
+        <div class="choice-grid" id="system-choices"></div>
+      </div>
+
+      <div class="step hidden" id="points-step">
         <label class="step-label">Points total</label>
         <select id="points-total">
           <option value="500">500</option>
@@ -185,7 +114,8 @@
       <div class="step hidden" id="slots-step">
         <label class="step-label">5. Choose a time</label>
         <div id="slots"></div>
-        <p class="empty-note hidden" id="no-slots">No availability that day — try another date.</p>
+        <p class="empty-note hidden" id="no-slots">No availability that day — try another date or shorter duration.</p>
+        <p class="closed-note hidden" id="shop-closed">We're closed that day — open Wednesday to Sunday.</p>
       </div>
 
       <div class="step hidden" id="contact-step">
@@ -222,21 +152,51 @@ const SERVICES = [
   { key: 'dnd', name: 'D&D / RPG Table', min: 1, max: 12, needsPoints: false },
 ];
 
+const GAME_SYSTEMS = {
+  warhammer: ['Warhammer 40,000', 'Age of Sigmar', 'Other'],
+  tcg: ['Magic: The Gathering', 'Pokémon', 'Yu-Gi-Oh!', 'One Piece Card Game', 'Other'],
+  dnd: ['Dungeons & Dragons', 'Pathfinder', 'Call of Cthulhu', 'Other'],
+};
+
 let selectedService = null;
 let selectedDuration = null;
 let selectedSlot = null;
+let selectedSystem = null;
 
 const serviceChoicesEl = document.getElementById('service-choices');
 SERVICES.forEach(s => {
   const el = document.createElement('div');
   el.className = 'choice';
   el.textContent = s.name;
-  el.dataset.key = s.key;
   el.addEventListener('click', () => {
     document.querySelectorAll('#service-choices .choice').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
     selectedService = s;
-    document.getElementById('points-step').style.display = s.needsPoints ? 'block' : 'none';
+    selectedSystem = null;
+
+    document.getElementById('points-step').classList.toggle('hidden', !s.needsPoints);
+
+    const systems = GAME_SYSTEMS[s.key];
+    const systemStep = document.getElementById('system-step');
+    const systemChoicesEl = document.getElementById('system-choices');
+    if (systems) {
+      systemStep.classList.remove('hidden');
+      systemChoicesEl.innerHTML = '';
+      systems.forEach(sys => {
+        const sysEl = document.createElement('div');
+        sysEl.className = 'choice';
+        sysEl.textContent = sys;
+        sysEl.addEventListener('click', () => {
+          document.querySelectorAll('#system-choices .choice').forEach(c => c.classList.remove('selected'));
+          sysEl.classList.add('selected');
+          selectedSystem = sys;
+        });
+        systemChoicesEl.appendChild(sysEl);
+      });
+    } else {
+      systemStep.classList.add('hidden');
+    }
+
     document.getElementById('party-size').min = s.min;
     document.getElementById('party-size').max = s.max;
     document.getElementById('party-size').value = s.min;
@@ -256,27 +216,34 @@ document.getElementById('booking-date').min = new Date().toISOString().split('T'
 
 document.getElementById('check-availability').addEventListener('click', async () => {
   const date = document.getElementById('booking-date').value;
+  const partySize = parseInt(document.getElementById('party-size').value, 10);
   if (!selectedService || !selectedDuration || !date) {
     alert('Please choose a table type, booking length, and date first.');
     return;
   }
 
-  const res = await fetch(`/api/availability?service=${selectedService.key}&date=${date}&duration=${selectedDuration}`);
+  const res = await fetch(`/api/availability?service=${selectedService.key}&date=${date}&duration=${selectedDuration}&partySize=${partySize}`);
   const data = await res.json();
 
   const slotsStep = document.getElementById('slots-step');
   const slotsEl = document.getElementById('slots');
   const noSlotsEl = document.getElementById('no-slots');
+  const closedEl = document.getElementById('shop-closed');
   slotsStep.classList.remove('hidden');
   slotsEl.innerHTML = '';
   selectedSlot = null;
   document.getElementById('contact-step').classList.add('hidden');
+  noSlotsEl.classList.add('hidden');
+  closedEl.classList.add('hidden');
 
+  if (data.closed) {
+    closedEl.classList.remove('hidden');
+    return;
+  }
   if (!data.slots || data.slots.length === 0) {
     noSlotsEl.classList.remove('hidden');
     return;
   }
-  noSlotsEl.classList.add('hidden');
 
   data.slots.forEach(slot => {
     const el = document.createElement('div');
@@ -315,8 +282,7 @@ document.getElementById('submit-booking').addEventListener('click', async () => 
       date: document.getElementById('booking-date').value,
       startTime: selectedSlot.startTime,
       duration: selectedDuration,
-      partySize,
-      pointsTotal,
+      partySize, pointsTotal, gameSystem: selectedSystem,
       name, email, phone,
     }),
   });
