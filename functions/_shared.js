@@ -7,18 +7,58 @@ export const CAPACITY = {
   small: 7,   // 60" x 38" tables — TCG, Casual, D&D
 };
 
-// Shop opening hours — adjust these to match reality.
-export const OPEN_HOUR = 10;   // 10:00
-export const CLOSE_HOUR = 22;  // 22:00
+// How many people one table seats for RPG purposes. RPG bookings scale
+// across multiple tables once the party outgrows this. Adjust this one
+// number if the real seating capacity is different.
+export const PARTY_PER_TABLE = 6;
 
-// Duration brackets: value is the block length reserved (hours),
-// price is per person for that whole booking.
+// Opening hours by day of week (JS Date.getDay(): 0=Sun...6=Sat).
+// null means closed that day.
+export const OPENING_HOURS = {
+  0: { open: 10, close: 22 }, // Sunday
+  1: null,                    // Monday — closed
+  2: null,                    // Tuesday — closed
+  3: { open: 10, close: 22 }, // Wednesday
+  4: { open: 10, close: 22 }, // Thursday
+  5: { open: 10, close: 22 }, // Friday
+  6: { open: 10, close: 22 }, // Saturday
+};
+
+export function getOpeningHoursFor(dateStr) {
+  // dateStr is 'YYYY-MM-DD'. Parse as local date, not UTC-shifted.
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return OPENING_HOURS[day]; // object {open, close} or null if closed
+}
+
 export const DURATION_BRACKETS = {
   '3.5': { hours: 3.5, label: 'Up to 3.5 hours', pricePerPerson: 4 },
   '7.5': { hours: 7.5, label: '5–7.5 hours',      pricePerPerson: 6.5 },
   '10':  { hours: 10,  label: '7.5–10 hours',     pricePerPerson: 9 },
   '12':  { hours: 12,  label: '10–12 hours',      pricePerPerson: 12 },
 };
+
+// Sub-game-system options per service. 'Other' is always the fallback.
+export const GAME_SYSTEMS = {
+  warhammer: ['Warhammer 40,000', 'Age of Sigmar', 'Other'],
+  tcg: ['Magic: The Gathering', 'Pokémon', 'Yu-Gi-Oh!', 'One Piece Card Game', 'Other'],
+  dnd: ['Dungeons & Dragons', 'Pathfinder', 'Call of Cthulhu', 'Other'],
+};
+
+// Which table-size pools a service can draw from, in preference order.
+export const SIZE_PREFERENCE = {
+  warhammer: ['large'],
+  tcg: ['small'],
+  casual: ['small'],
+  dnd: ['small', 'large'],
+};
+
+export function tablesRequired(serviceKey, partySize) {
+  if (serviceKey === 'dnd') {
+    return Math.ceil(partySize / PARTY_PER_TABLE);
+  }
+  return 1;
+}
 
 export function addHours(startTime, hours) {
   const [h, m] = startTime.split(':').map(Number);
@@ -48,22 +88,53 @@ export function jsonResponse(data, status = 200) {
   });
 }
 
-// Counts how many bookings of a given table_size overlap a candidate
-// time window on a given date (excludes cancelled bookings).
-export async function countOverlapping(db, date, tableSize, startTime, endTime) {
+// Sums how many tables of a given size are already committed during an
+// overlapping time window on a given date (excludes cancelled bookings).
+export async function tablesInUse(db, date, size, startTime, endTime) {
+  const column = size === 'small' ? 'tables_small' : 'tables_large';
   const { results } = await db
     .prepare(
-      `SELECT start_time, end_time FROM bookings
-       WHERE date = ? AND table_size = ? AND status != 'cancelled'`
+      `SELECT start_time, end_time, ${column} AS count FROM bookings
+       WHERE date = ? AND status != 'cancelled' AND ${column} > 0`
     )
-    .bind(date, tableSize)
+    .bind(date)
     .all();
 
-  return results.filter((b) => timesOverlap(startTime, endTime, b.start_time, b.end_time)).length;
+  return results
+    .filter((b) => timesOverlap(startTime, endTime, b.start_time, b.end_time))
+    .reduce((sum, b) => sum + b.count, 0);
+}
+
+// Tries to allocate enough tables for a booking, preferring the service's
+// preferred size order, spilling into the next size if needed (used by RPG).
+// Returns { small, large } counts on success, or null if it doesn't fit.
+export async function tryAllocate(db, date, startTime, endTime, serviceKey, partySize) {
+  const needed = tablesRequired(serviceKey, partySize);
+  const order = SIZE_PREFERENCE[serviceKey];
+
+  const available = {};
+  for (const size of order) {
+    const used = await tablesInUse(db, date, size, startTime, endTime);
+    available[size] = CAPACITY[size] - used;
+  }
+
+  let remaining = needed;
+  const allocation = { small: 0, large: 0 };
+  for (const size of order) {
+    if (remaining <= 0) break;
+    const take = Math.min(available[size], remaining);
+    if (take > 0) {
+      allocation[size] += take;
+      remaining -= take;
+    }
+  }
+
+  if (remaining > 0) return null; // couldn't fit
+  return allocation;
 }
 
 export async function sendConfirmationEmail(env, booking) {
-  if (!env.BREVO_API_KEY) return; // no key configured — skip silently, booking still succeeds
+  if (!env.BREVO_API_KEY) return;
 
   const body = {
     sender: { name: 'Wild Coast Gaming', email: 'info@wildcoastgaming.co.uk' },
@@ -76,7 +147,7 @@ export async function sendConfirmationEmail(env, booking) {
         <p>Your table is booked. Show this reference at the shop, or just give your name.</p>
         <p style="font-size:20px;font-weight:bold;letter-spacing:2px;">${booking.reference}</p>
         <ul>
-          <li><strong>Table:</strong> ${booking.service_name}</li>
+          <li><strong>Table:</strong> ${booking.service_name}${booking.game_system ? ` — ${booking.game_system}` : ''}</li>
           <li><strong>Date:</strong> ${booking.date}</li>
           <li><strong>Time:</strong> ${booking.start_time}–${booking.end_time}</li>
           <li><strong>Party size:</strong> ${booking.party_size}</li>
@@ -90,17 +161,11 @@ export async function sendConfirmationEmail(env, booking) {
 
   await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': env.BREVO_API_KEY,
-    },
+    headers: { 'Content-Type': 'application/json', 'api-key': env.BREVO_API_KEY },
     body: JSON.stringify(body),
   });
 }
 
-// Shared admin-password check. Accepts the password from either a query
-// string (?password=...) or a JSON body ({ password: ... }), so both GET
-// and POST admin endpoints can use it the same way.
 export function isAdminAuthed(env, password) {
   return !!env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD;
 }
