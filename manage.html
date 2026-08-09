@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Your Booking — Wild Coast Gaming</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ font-family:'Manrope',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; display:flex; justify-content:center; padding:6vh 20px; }
+  main{ width:100%; max-width:560px; }
+  .panel{ padding:36px 30px; background:rgba(255,255,255,0.55); border:1px solid rgba(16,38,61,0.14); border-radius:3px; }
+  h1{ font-family:'Orbitron',sans-serif; font-size:1.3rem; margin-bottom:16px; }
+  dl{ font-size:0.9rem; margin-bottom:24px; }
+  dt{ color:var(--slate); margin-top:8px; }
+  dd{ font-weight:600; }
+  button, input, select{ font-family:'Manrope',sans-serif; }
+  input, select{ width:100%; padding:11px 14px; border:1px solid rgba(16,38,61,0.25); background:rgba(255,255,255,0.6); border-radius:3px; font-size:0.9rem; margin-bottom:10px; }
+  .btn{ padding:12px 20px; border:1px solid var(--ink); background:var(--ink); color:var(--bg); font-family:'Orbitron',sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; border-radius:3px; }
+  .btn:hover{ background:var(--teal); border-color:var(--teal); }
+  .btn.danger{ background:transparent; color:#b23b3b; border-color:#b23b3b; }
+  .btn.danger:hover{ background:#b23b3b; color:#fff; }
+  .row{ display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+  .hidden{ display:none; }
+  .error{ color:#b23b3b; font-size:0.85rem; margin-top:10px; }
+  .success{ color:var(--teal); font-weight:600; }
+  .choice-grid{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .choice{ padding:9px 14px; border:1px solid rgba(16,38,61,0.25); cursor:pointer; font-size:0.82rem; border-radius:3px; }
+  .choice.selected{ background:var(--ink); color:var(--bg); }
+</style>
+</head>
+<body>
+<main>
+  <div class="panel" id="panel">
+    <h1>Manage Your Booking</h1>
+    <div id="loading">Loading…</div>
+    <div id="not-found" class="hidden"><p class="error">We couldn't find that booking — the link may be out of date.</p></div>
+
+    <div id="content" class="hidden">
+      <dl id="summary"></dl>
+
+      <div id="cancelled-note" class="hidden"><p class="error">This booking has been cancelled.</p></div>
+
+      <div id="actions" class="row">
+        <button class="btn" id="show-amend">Change Date / Time / Party Size</button>
+        <button class="btn danger" id="cancel-btn">Cancel Booking</button>
+      </div>
+
+      <div id="amend-form" class="hidden" style="margin-top:20px;">
+        <label>Party size</label>
+        <input type="number" id="am-party" min="1">
+        <label>Booking length</label>
+        <div class="choice-grid" id="am-duration"></div>
+        <label>Date</label>
+        <input type="date" id="am-date">
+        <button class="btn" id="am-check" style="margin-top:6px;">Check Availability</button>
+        <div id="am-slots" class="choice-grid" style="margin-top:12px;"></div>
+        <button class="btn" id="am-submit" style="margin-top:12px; display:none;">Save Changes</button>
+      </div>
+
+      <p id="action-error" class="error hidden"></p>
+      <p id="action-success" class="success hidden"></p>
+    </div>
+  </div>
+</main>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const ref = params.get('ref');
+const token = params.get('token');
+let booking = null;
+let selectedDuration = null;
+let selectedSlot = null;
+
+const DURATIONS = [
+  { key: '3.5', label: 'Up to 3.5 hrs' },
+  { key: '7.5', label: '5–7.5 hrs' },
+  { key: '10', label: '7.5–10 hrs' },
+  { key: '12', label: '10–12 hrs' },
+];
+
+async function load() {
+  if (!ref || !token) { showNotFound(); return; }
+  const res = await fetch(`/api/manage-booking?ref=${encodeURIComponent(ref)}&token=${encodeURIComponent(token)}`);
+  if (!res.ok) { showNotFound(); return; }
+  const data = await res.json();
+  booking = data.booking;
+
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('content').classList.remove('hidden');
+  renderSummary();
+
+  if (booking.status === 'cancelled') {
+    document.getElementById('cancelled-note').classList.remove('hidden');
+    document.getElementById('actions').classList.add('hidden');
+  }
+}
+
+function showNotFound() {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('not-found').classList.remove('hidden');
+}
+
+function renderSummary() {
+  document.getElementById('summary').innerHTML = `
+    <dt>Reference</dt><dd>${booking.reference}</dd>
+    <dt>Table</dt><dd>${booking.service_name}${booking.game_system ? ' — ' + booking.game_system : ''}</dd>
+    <dt>Date &amp; time</dt><dd>${booking.date} · ${booking.start_time}–${booking.end_time}</dd>
+    <dt>Party size</dt><dd>${booking.party_size}</dd>
+    <dt>Total to pay in-shop</dt><dd>£${booking.price_total.toFixed(2)}</dd>
+  `;
+}
+
+document.getElementById('cancel-btn').addEventListener('click', async () => {
+  if (!confirm('Cancel this booking?')) return;
+  const res = await fetch('/api/manage-booking', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reference: ref, token, action: 'cancel' }),
+  });
+  const data = await res.json();
+  const errorEl = document.getElementById('action-error');
+  const successEl = document.getElementById('action-success');
+  if (!res.ok) { errorEl.textContent = data.error; errorEl.classList.remove('hidden'); return; }
+  successEl.textContent = 'Booking cancelled.';
+  successEl.classList.remove('hidden');
+  document.getElementById('actions').classList.add('hidden');
+  document.getElementById('amend-form').classList.add('hidden');
+});
+
+document.getElementById('show-amend').addEventListener('click', () => {
+  const form = document.getElementById('amend-form');
+  form.classList.toggle('hidden');
+  document.getElementById('am-party').value = booking.party_size;
+  document.getElementById('am-date').value = booking.date;
+  document.getElementById('am-date').min = new Date().toISOString().split('T')[0];
+
+  const durEl = document.getElementById('am-duration');
+  durEl.innerHTML = '';
+  DURATIONS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'choice';
+    el.textContent = d.label;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('#am-duration .choice').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedDuration = d.key;
+    });
+    durEl.appendChild(el);
+  });
+});
+
+document.getElementById('am-check').addEventListener('click', async () => {
+  const date = document.getElementById('am-date').value;
+  const partySize = parseInt(document.getElementById('am-party').value, 10);
+  if (!date || !selectedDuration) { alert('Pick a booking length and date first.'); return; }
+
+  const res = await fetch(`/api/availability?service=${booking.service_key}&date=${date}&duration=${selectedDuration}&partySize=${partySize}`);
+  const data = await res.json();
+  const slotsEl = document.getElementById('am-slots');
+  slotsEl.innerHTML = '';
+  document.getElementById('am-submit').style.display = 'none';
+
+  (data.slots || []).forEach(slot => {
+    const el = document.createElement('div');
+    el.className = 'choice';
+    el.textContent = slot.startTime;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('#am-slots .choice').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedSlot = slot;
+      document.getElementById('am-submit').style.display = 'inline-block';
+    });
+    slotsEl.appendChild(el);
+  });
+  if (!data.slots || data.slots.length === 0) slotsEl.textContent = 'No availability — try another date.';
+});
+
+document.getElementById('am-submit').addEventListener('click', async () => {
+  const partySize = parseInt(document.getElementById('am-party').value, 10);
+  const date = document.getElementById('am-date').value;
+  const res = await fetch('/api/manage-booking', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reference: ref, token, action: 'amend', date, startTime: selectedSlot.startTime, duration: selectedDuration, partySize }),
+  });
+  const data = await res.json();
+  const errorEl = document.getElementById('action-error');
+  const successEl = document.getElementById('action-success');
+  if (!res.ok) { errorEl.textContent = data.error; errorEl.classList.remove('hidden'); return; }
+  successEl.textContent = 'Booking updated — check your email for confirmation.';
+  successEl.classList.remove('hidden');
+  errorEl.classList.add('hidden');
+  document.getElementById('amend-form').classList.add('hidden');
+  load();
+});
+
+load();
+</script>
+</body>
+</html>
