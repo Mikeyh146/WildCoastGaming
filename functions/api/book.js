@@ -1,14 +1,10 @@
-import { DURATION_BRACKETS, addHours, tryAllocate, getOpeningHoursFor, generateReference, jsonResponse, sendConfirmationEmail } from '../_shared.js';
+import { DURATION_BRACKETS, addHours, tryAllocate, getOpeningHoursFor, generateReference, generateRandomHex, jsonResponse, sendConfirmationEmail } from '../_shared.js';
 
 // POST /api/book
 // Body: { service, date, startTime, duration, partySize, pointsTotal, gameSystem, name, email, phone }
 export async function onRequestPost({ request, env }) {
   let body;
-  try {
-    body = await request.json();
-  } catch {
-    return jsonResponse({ error: 'Invalid request body' }, 400);
-  }
+  try { body = await request.json(); } catch { return jsonResponse({ error: 'Invalid request body' }, 400); }
 
   const { service: serviceKey, date, startTime, duration: durationKey, partySize, pointsTotal, gameSystem, name, email, phone } = body;
 
@@ -39,8 +35,6 @@ export async function onRequestPost({ request, env }) {
 
   const endTime = addHours(startTime, bracket.hours);
 
-  // Re-check + allocate at booking time (guards against slots filling between
-  // page load and submit).
   const allocation = await tryAllocate(env.DB, date, startTime, endTime, serviceKey, partySize);
   if (!allocation) {
     return jsonResponse({ error: 'Sorry, that slot just filled up. Please pick another time.' }, 409);
@@ -48,17 +42,18 @@ export async function onRequestPost({ request, env }) {
 
   const priceTotal = Math.round(bracket.pricePerPerson * partySize * 100) / 100;
   const reference = generateReference();
+  const manageToken = generateRandomHex(8);
 
   await env.DB
     .prepare(
       `INSERT INTO bookings
-       (reference, service_key, table_size, tables_small, tables_large, date, start_time, duration_hours, end_time,
+       (reference, manage_token, service_key, table_size, tables_small, tables_large, date, start_time, duration_hours, end_time,
         party_size, points_total, game_system, customer_name, customer_email, customer_phone,
         price_pp, price_total)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
-      reference, serviceKey, allocation.large > 0 && allocation.small === 0 ? 'large' : 'small',
+      reference, manageToken, serviceKey, allocation.large > 0 && allocation.small === 0 ? 'large' : 'small',
       allocation.small, allocation.large, date, startTime, bracket.hours, endTime,
       partySize, pointsTotal || null, gameSystem || null, name, email, phone || null,
       bracket.pricePerPerson, priceTotal
@@ -66,19 +61,17 @@ export async function onRequestPost({ request, env }) {
     .run();
 
   const bookingForEmail = {
-    reference, service_name: service.name, date, start_time: startTime, end_time: endTime,
+    reference, manage_token: manageToken, service_name: service.name, date, start_time: startTime, end_time: endTime,
     party_size: partySize, points_total: pointsTotal, game_system: gameSystem,
     customer_name: name, customer_email: email, price_total: priceTotal,
   };
 
   try {
     await sendConfirmationEmail(env, bookingForEmail);
-  } catch (e) {
-    // Booking already saved — don't fail the request just because the email had trouble.
-  }
+  } catch (e) { /* booking already saved — email failure isn't fatal */ }
 
   return jsonResponse({
-    reference, date, startTime, endTime, partySize, priceTotal, serviceName: service.name,
+    reference, manageToken, date, startTime, endTime, partySize, priceTotal, serviceName: service.name,
     tablesUsed: allocation,
   });
 }
