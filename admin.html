@@ -13,15 +13,18 @@
   .sub{ color:var(--slate); font-size:0.85rem; margin-bottom:20px; }
 
   #login{ max-width:320px; margin:80px auto; text-align:center; }
-  #login input{ width:100%; padding:12px; margin:12px 0; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
+  #login input{ width:100%; padding:12px; margin:8px 0; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
+  #login .hint{ font-size:0.75rem; color:var(--slate); margin-top:14px; }
   button{ padding:11px 18px; background:var(--ink); color:var(--bg); border:none; border-radius:3px; font-family:'Orbitron',sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer; }
   button:hover{ background:var(--teal); }
   button.danger:hover{ background:#b23b3b; }
   button.ghost{ background:transparent; color:var(--ink); border:1px solid rgba(16,38,61,0.3); }
   button.ghost:hover{ background:rgba(16,38,61,0.06); color:var(--ink); }
   .error{ color:#b23b3b; font-size:0.85rem; }
+  .success{ color:var(--teal); font-size:0.85rem; }
 
   .hidden{ display:none; }
+  .top-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
 
   .tabs{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
   .tab{ padding:9px 16px; border:1px solid rgba(16,38,61,0.25); background:rgba(255,255,255,0.5); cursor:pointer; font-size:0.8rem; font-weight:600; border-radius:3px; }
@@ -50,6 +53,17 @@
   .table-wrap{ overflow-x:auto; }
   .empty{ color:var(--slate); padding:20px 0; }
   .section-title{ font-family:'Orbitron',sans-serif; font-size:0.9rem; margin:24px 0 10px; }
+
+  .edit-row td{ background:rgba(51,167,183,0.06); }
+  .edit-row input, .edit-row select{ padding:7px 9px; border:1px solid rgba(16,38,61,0.25); border-radius:3px; font-size:0.8rem; width:100%; }
+  .edit-row .choice-grid{ display:flex; gap:6px; flex-wrap:wrap; }
+  .edit-row .choice{ padding:6px 10px; border:1px solid rgba(16,38,61,0.25); cursor:pointer; font-size:0.72rem; border-radius:3px; }
+  .edit-row .choice.selected{ background:var(--ink); color:var(--bg); }
+  .edit-row .slots{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+
+  .staff-form{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:end; }
+  .staff-form label{ font-size:0.75rem; color:var(--slate); display:block; margin-bottom:4px; }
+  .staff-form input{ padding:9px 12px; border:1px solid rgba(16,38,61,0.3); border-radius:3px; }
 </style>
 </head>
 <body>
@@ -57,19 +71,27 @@
 <div id="login">
   <h1>Staff Hub</h1>
   <p class="sub">Wild Coast Gaming</p>
-  <input type="password" id="password" placeholder="Password">
+  <input type="text" id="login-username" placeholder="Username (leave blank for Owner)">
+  <input type="password" id="login-password" placeholder="Password">
   <button onclick="login()">Enter</button>
   <p class="error" id="login-error"></p>
+  <p class="hint">Owner: leave username blank, use the master password.</p>
 </div>
 
 <div id="dashboard-app" class="hidden">
-  <h1>Staff Hub</h1>
-  <p class="sub">Wild Coast Gaming — bookings, payments, and customers</p>
+  <div class="top-bar">
+    <div>
+      <h1>Staff Hub</h1>
+      <p class="sub" id="who-am-i"></p>
+    </div>
+    <button class="ghost" onclick="logout()">Log Out</button>
+  </div>
 
-  <div class="tabs">
+  <div class="tabs" id="tabs">
     <div class="tab active" data-tab="overview">Dashboard</div>
     <div class="tab" data-tab="bookings">Bookings</div>
     <div class="tab" data-tab="clients">Clients</div>
+    <div class="tab hidden" data-tab="staff" id="staff-tab-btn">Staff</div>
   </div>
 
   <!-- OVERVIEW -->
@@ -96,42 +118,79 @@
   <div id="tab-clients" class="hidden">
     <div class="table-wrap"><table id="clients-table"><thead></thead><tbody></tbody></table></div>
   </div>
+
+  <!-- STAFF (owner only) -->
+  <div id="tab-staff" class="hidden">
+    <div class="section-title">Add Staff Account</div>
+    <div class="staff-form">
+      <div><label>Display Name</label><input id="new-staff-name" placeholder="e.g. Sam"></div>
+      <div><label>Username</label><input id="new-staff-username" placeholder="e.g. sam"></div>
+      <div><label>Password</label><input id="new-staff-password" type="password"></div>
+      <button onclick="createStaff()">Add</button>
+    </div>
+    <p class="error hidden" id="staff-error"></p>
+    <div class="section-title">Current Staff</div>
+    <div class="table-wrap"><table id="staff-table"><thead></thead><tbody></tbody></table></div>
+  </div>
 </div>
 
 <script>
-let password = '';
+let token = '';
+let role = '';
+const DURATIONS = [
+  { key: '3.5', label: 'Up to 3.5 hrs' },
+  { key: '7.5', label: '5–7.5 hrs' },
+  { key: '10', label: '7.5–10 hrs' },
+  { key: '12', label: '10–12 hrs' },
+];
 
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    ['overview', 'bookings', 'clients'].forEach(name => {
+    ['overview', 'bookings', 'clients', 'staff'].forEach(name => {
       document.getElementById('tab-' + name).classList.toggle('hidden', name !== tab.dataset.tab);
     });
     if (tab.dataset.tab === 'overview') loadOverview();
     if (tab.dataset.tab === 'bookings') loadBookings();
     if (tab.dataset.tab === 'clients') loadClients();
+    if (tab.dataset.tab === 'staff') loadStaff();
   });
 });
 
-function login() {
-  password = document.getElementById('password').value;
-  fetch(`/api/admin-dashboard?password=${encodeURIComponent(password)}`)
-    .then(r => {
-      if (r.status === 401) throw new Error('bad password');
-      document.getElementById('login').classList.add('hidden');
-      document.getElementById('dashboard-app').classList.remove('hidden');
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('from-date').value = today;
-      loadOverview();
-    })
-    .catch(() => {
-      document.getElementById('login-error').textContent = 'Wrong password.';
-    });
+async function login() {
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+
+  const res = await fetch('/api/staff-login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    document.getElementById('login-error').textContent = data.error || 'Login failed.';
+    return;
+  }
+
+  token = data.token; role = data.role;
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('dashboard-app').classList.remove('hidden');
+  document.getElementById('who-am-i').textContent = `Logged in as ${data.displayName} (${role})`;
+  if (role === 'owner') document.getElementById('staff-tab-btn').classList.remove('hidden');
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('from-date').value = today;
+  loadOverview();
+}
+
+function logout() {
+  token = ''; role = '';
+  document.getElementById('dashboard-app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
 }
 
 async function loadOverview() {
-  const res = await fetch(`/api/admin-dashboard?password=${encodeURIComponent(password)}`);
+  const res = await fetch(`/api/admin-dashboard?token=${token}`);
   const data = await res.json();
   const t = data.totals;
 
@@ -143,45 +202,38 @@ async function loadOverview() {
   `;
 
   const todayTable = document.getElementById('today-table');
-  if (data.todaysBookings.length === 0) {
-    todayTable.innerHTML = '<tbody><tr><td class="empty">Nothing booked today.</td></tr></tbody>';
-  } else {
-    todayTable.innerHTML = `
-      <thead><tr><th>Time</th><th>Table</th><th>Party</th><th>Customer</th><th>Paid</th></tr></thead>
-      <tbody>${data.todaysBookings.map(b => `
-        <tr>
-          <td>${b.start_time}–${b.end_time}</td>
-          <td>${b.service_name}</td>
-          <td>${b.party_size}</td>
-          <td>${b.customer_name}</td>
-          <td><span class="badge ${b.paid ? 'paid' : 'unpaid'}">${b.paid ? 'Paid' : 'Unpaid'}</span></td>
-        </tr>`).join('')}</tbody>
-    `;
-  }
+  todayTable.innerHTML = data.todaysBookings.length === 0
+    ? '<tbody><tr><td class="empty">Nothing booked today.</td></tr></tbody>'
+    : `<thead><tr><th>Time</th><th>Table</th><th>Party</th><th>Customer</th><th>Paid</th></tr></thead>
+       <tbody>${data.todaysBookings.map(b => `
+        <tr><td>${b.start_time}–${b.end_time}</td><td>${b.service_name}</td><td>${b.party_size}</td><td>${b.customer_name}</td>
+        <td><span class="badge ${b.paid ? 'paid' : 'unpaid'}">${b.paid ? 'Paid' : 'Unpaid'}</span></td></tr>`).join('')}</tbody>`;
 
-  const serviceTable = document.getElementById('service-table');
-  serviceTable.innerHTML = `
+  document.getElementById('service-table').innerHTML = `
     <thead><tr><th>Table</th><th>Bookings</th><th>Revenue</th></tr></thead>
-    <tbody>${data.byService.map(s => `
-      <tr><td>${s.service_name}</td><td>${s.bookings}</td><td>£${s.revenue.toFixed(2)}</td></tr>
-    `).join('')}</tbody>
-  `;
+    <tbody>${data.byService.map(s => `<tr><td>${s.service_name}</td><td>${s.bookings}</td><td>£${s.revenue.toFixed(2)}</td></tr>`).join('')}</tbody>`;
 }
+
+let currentBookings = [];
 
 async function loadBookings() {
   const from = document.getElementById('from-date').value;
   const to = document.getElementById('to-date').value;
   const includeCancelled = document.getElementById('show-cancelled').checked;
-  const params = new URLSearchParams({ password });
+  const params = new URLSearchParams({ token });
   if (from) params.set('from', from);
   if (to) params.set('to', to);
   if (includeCancelled) params.set('includeCancelled', '1');
 
   const res = await fetch(`/api/admin-bookings?${params}`);
   const data = await res.json();
-  const table = document.getElementById('bookings-table');
+  currentBookings = data.bookings || [];
+  renderBookings();
+}
 
-  if (!data.bookings || data.bookings.length === 0) {
+function renderBookings() {
+  const table = document.getElementById('bookings-table');
+  if (currentBookings.length === 0) {
     table.innerHTML = '<tbody><tr><td class="empty">No bookings in this range.</td></tr></tbody>';
     return;
   }
@@ -191,8 +243,8 @@ async function loadBookings() {
       <th>Date</th><th>Time</th><th>Table</th><th>Tables Used</th><th>Party</th><th>Points</th>
       <th>Customer</th><th>Ref</th><th>Total</th><th>Status</th><th>Actions</th>
     </tr></thead>
-    <tbody>${data.bookings.map(b => `
-      <tr class="${b.status === 'cancelled' ? 'cancelled' : ''}">
+    <tbody>${currentBookings.map(b => `
+      <tr class="${b.status === 'cancelled' ? 'cancelled' : ''}" id="row-${b.id}">
         <td>${b.date}</td>
         <td>${b.start_time}–${b.end_time}</td>
         <td>${b.service_name}${b.game_system ? `<br><span style="color:#4B5663;font-size:0.75rem;">${b.game_system}</span>` : ''}</td>
@@ -205,7 +257,8 @@ async function loadBookings() {
         <td>${b.status}</td>
         <td class="actions-cell">
           ${b.status !== 'cancelled' ? `
-            <button class="ghost" onclick="doAction(${b.id}, '${b.paid ? 'mark-unpaid' : 'mark-paid'}')">${b.paid ? 'Mark Unpaid' : 'Mark Paid'}</button>
+            <button class="ghost" onclick="doAction(${b.id}, '${b.paid ? 'mark-unpaid' : 'mark-paid'}')">${b.paid ? 'Unpaid' : 'Paid'}</button>
+            <button class="ghost" onclick="toggleEdit(${b.id})">Edit</button>
             <button class="danger" onclick="doAction(${b.id}, 'cancel')">Cancel</button>
           ` : ''}
         </td>
@@ -215,38 +268,157 @@ async function loadBookings() {
 }
 
 async function doAction(id, action) {
-  if (action === 'cancel' && !confirm('Cancel this booking?')) return;
+  if (action === 'cancel' && !confirm('Cancel this booking? The customer will be emailed.')) return;
   await fetch('/api/admin-action', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password, id, action }),
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, id, action }),
   });
   loadBookings();
 }
 
+function toggleEdit(id) {
+  const existingEdit = document.getElementById('edit-' + id);
+  if (existingEdit) { existingEdit.remove(); return; }
+
+  const b = currentBookings.find(x => x.id === id);
+  const row = document.getElementById('row-' + id);
+  const tr = document.createElement('tr');
+  tr.className = 'edit-row';
+  tr.id = 'edit-' + id;
+  tr.innerHTML = `
+    <td colspan="11">
+      <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+        <div><label style="font-size:0.7rem;color:#4B5663;">Party size</label><br><input type="number" id="edit-party-${id}" value="${b.party_size}" min="1" style="width:80px;"></div>
+        <div><label style="font-size:0.7rem;color:#4B5663;">Date</label><br><input type="date" id="edit-date-${id}" value="${b.date}"></div>
+        <div>
+          <label style="font-size:0.7rem;color:#4B5663;">Duration</label><br>
+          <div class="choice-grid" id="edit-duration-${id}">
+            ${DURATIONS.map(d => `<div class="choice" data-key="${d.key}">${d.label}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <button class="ghost" style="margin-top:10px;" onclick="checkEditAvailability(${id})">Check Availability</button>
+      <div class="slots" id="edit-slots-${id}"></div>
+      <button style="margin-top:10px; display:none;" id="edit-save-${id}" onclick="saveEdit(${id})">Save &amp; Notify Customer</button>
+      <p class="error hidden" id="edit-error-${id}"></p>
+    </td>
+  `;
+  row.after(tr);
+
+  tr.querySelectorAll(`#edit-duration-${id} .choice`).forEach(el => {
+    el.addEventListener('click', () => {
+      tr.querySelectorAll(`#edit-duration-${id} .choice`).forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+}
+
+let editSelectedSlot = {};
+
+async function checkEditAvailability(id) {
+  const b = currentBookings.find(x => x.id === id);
+  const date = document.getElementById(`edit-date-${id}`).value;
+  const partySize = parseInt(document.getElementById(`edit-party-${id}`).value, 10);
+  const durationEl = document.querySelector(`#edit-duration-${id} .choice.selected`);
+  if (!date || !durationEl) { alert('Pick a duration and date.'); return; }
+  const duration = durationEl.dataset.key;
+
+  const res = await fetch(`/api/availability?service=${b.service_key}&date=${date}&duration=${duration}&partySize=${partySize}`);
+  const data = await res.json();
+  const slotsEl = document.getElementById(`edit-slots-${id}`);
+  slotsEl.innerHTML = '';
+  document.getElementById(`edit-save-${id}`).style.display = 'none';
+
+  (data.slots || []).forEach(slot => {
+    const el = document.createElement('div');
+    el.className = 'choice';
+    el.textContent = slot.startTime;
+    el.addEventListener('click', () => {
+      slotsEl.querySelectorAll('.choice').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      editSelectedSlot[id] = { startTime: slot.startTime, duration };
+      document.getElementById(`edit-save-${id}`).style.display = 'inline-block';
+    });
+    slotsEl.appendChild(el);
+  });
+  if (!data.slots || data.slots.length === 0) slotsEl.textContent = 'No availability for that combination.';
+}
+
+async function saveEdit(id) {
+  const date = document.getElementById(`edit-date-${id}`).value;
+  const partySize = parseInt(document.getElementById(`edit-party-${id}`).value, 10);
+  const slot = editSelectedSlot[id];
+  const errorEl = document.getElementById(`edit-error-${id}`);
+
+  const res = await fetch('/api/admin-amend', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, id, date, startTime: slot.startTime, duration: slot.duration, partySize }),
+  });
+  const data = await res.json();
+  if (!res.ok) { errorEl.textContent = data.error; errorEl.classList.remove('hidden'); return; }
+  toggleEdit(id);
+  loadBookings();
+}
+
 async function loadClients() {
-  const res = await fetch(`/api/admin-clients?password=${encodeURIComponent(password)}`);
+  const res = await fetch(`/api/admin-clients?token=${token}`);
   const data = await res.json();
   const table = document.getElementById('clients-table');
-
   if (!data.clients || data.clients.length === 0) {
     table.innerHTML = '<tbody><tr><td class="empty">No clients yet.</td></tr></tbody>';
     return;
   }
-
   table.innerHTML = `
     <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Bookings</th><th>Total Spent</th><th>Last Booking</th></tr></thead>
     <tbody>${data.clients.map(c => `
-      <tr>
-        <td>${c.customer_name}</td>
-        <td>${c.customer_email}</td>
-        <td>${c.customer_phone || '—'}</td>
-        <td>${c.total_bookings}</td>
-        <td>£${c.total_spent.toFixed(2)}</td>
-        <td>${c.last_booking_date}</td>
-      </tr>
-    `).join('')}</tbody>
-  `;
+      <tr><td>${c.customer_name}</td><td>${c.customer_email}</td><td>${c.customer_phone || '—'}</td>
+      <td>${c.total_bookings}</td><td>£${c.total_spent.toFixed(2)}</td><td>${c.last_booking_date}</td></tr>
+    `).join('')}</tbody>`;
+}
+
+async function loadStaff() {
+  const res = await fetch(`/api/staff-list?token=${token}`);
+  const data = await res.json();
+  const table = document.getElementById('staff-table');
+  if (!data.staff || data.staff.length === 0) {
+    table.innerHTML = '<tbody><tr><td class="empty">No staff accounts yet.</td></tr></tbody>';
+    return;
+  }
+  table.innerHTML = `
+    <thead><tr><th>Name</th><th>Username</th><th>Added</th><th></th></tr></thead>
+    <tbody>${data.staff.map(s => `
+      <tr><td>${s.display_name}</td><td>${s.username}</td><td>${s.created_at}</td>
+      <td><button class="danger" onclick="deleteStaff(${s.id})">Remove</button></td></tr>
+    `).join('')}</tbody>`;
+}
+
+async function createStaff() {
+  const displayName = document.getElementById('new-staff-name').value.trim();
+  const username = document.getElementById('new-staff-username').value.trim();
+  const password = document.getElementById('new-staff-password').value;
+  const errorEl = document.getElementById('staff-error');
+  errorEl.classList.add('hidden');
+
+  const res = await fetch('/api/staff-create', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, username, password, displayName }),
+  });
+  const data = await res.json();
+  if (!res.ok) { errorEl.textContent = data.error; errorEl.classList.remove('hidden'); return; }
+
+  document.getElementById('new-staff-name').value = '';
+  document.getElementById('new-staff-username').value = '';
+  document.getElementById('new-staff-password').value = '';
+  loadStaff();
+}
+
+async function deleteStaff(id) {
+  if (!confirm('Remove this staff account?')) return;
+  await fetch('/api/staff-list', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, deleteId: id }),
+  });
+  loadStaff();
 }
 </script>
 </body>
