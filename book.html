@@ -140,6 +140,11 @@
         <dt>Party size</dt><dd id="conf-party"></dd>
         <dt>Total to pay in-shop</dt><dd id="conf-price"></dd>
       </dl>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:24px;">
+        <a class="primary" id="conf-google-cal" href="#" target="_blank" style="text-decoration:none; text-align:center; padding:12px 18px; font-family:'Orbitron',sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; border:1px solid var(--ink); color:var(--ink); clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);">Add to Google Calendar</a>
+        <a class="primary" id="conf-ics" href="#" style="text-decoration:none; text-align:center; padding:12px 18px; font-family:'Orbitron',sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; border:1px solid var(--ink); color:var(--ink); clip-path:polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);">Download .ics (Apple/Outlook)</a>
+      </div>
+      <p style="margin-top:20px; font-size:0.85rem;"><a id="conf-manage-link" href="#" style="color:var(--teal);">Need to cancel or change this booking?</a></p>
     </div>
   </div>
 </main>
@@ -301,6 +306,18 @@ document.getElementById('submit-booking').addEventListener('click', async () => 
   document.getElementById('conf-time').textContent = `${data.date} · ${data.startTime}–${data.endTime}`;
   document.getElementById('conf-party').textContent = data.partySize;
   document.getElementById('conf-price').textContent = `£${data.priceTotal.toFixed(2)}`;
+
+  const toGCalDate = (dateStr, timeStr) => `${dateStr.replace(/-/g, '')}T${timeStr.replace(':', '')}00`;
+  const gcalUrl = new URL('https://www.google.com/calendar/render');
+  gcalUrl.searchParams.set('action', 'TEMPLATE');
+  gcalUrl.searchParams.set('text', `Wild Coast Gaming — ${data.serviceName}`);
+  gcalUrl.searchParams.set('dates', `${toGCalDate(data.date, data.startTime)}/${toGCalDate(data.date, data.endTime)}`);
+  gcalUrl.searchParams.set('details', `Reference ${data.reference}. Party of ${data.partySize}. Pay in-shop.`);
+  gcalUrl.searchParams.set('location', 'Wild Coast Gaming, Haverfordwest, Pembrokeshire');
+  document.getElementById('conf-google-cal').href = gcalUrl.toString();
+
+  document.getElementById('conf-ics').href = `/api/calendar-ics?ref=${data.reference}&token=${data.manageToken}`;
+  document.getElementById('conf-manage-link').href = `/manage.html?ref=${data.reference}&token=${data.manageToken}`;
 });
 </script>
 </body>
