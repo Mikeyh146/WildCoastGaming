@@ -290,11 +290,42 @@ async function buildDeck(){
     categories.push({ label: 'Removal & Interaction', cards: await fillCategory('removal', 'otag:removal', 9) });
     categories.push({ label: 'Board Wipes', cards: await fillCategory('board wipes', '(o:"destroy all" or o:"exile all creatures" or o:"each creature gets -")', 3) });
 
-    if (strategy) {
-      const words = strategy.split(/\s+/).filter(Boolean).slice(0, 3);
-      const themeQuery = words.map(w => `o:"${w}"`).join(' or ');
-      categories.push({ label: `Theme — "${strategy}"`, cards: await fillCategory('theme cards', `(${themeQuery})`, 18) });
-    }
+    
+if (strategy) {
+  const isWallsTheme = /\bwalls?\b/i.test(strategy);
+
+  if (isWallsTheme) {
+    // Prioritise actual Wall creatures, not cards that merely
+    // mention walls in their rules text.
+    categories.push({
+      label: 'Walls — Core Creatures',
+      cards: await fillCategory(
+        'Wall creatures',
+        't:wall',
+        30
+      )
+    });
+  } else {
+    // Keep the existing text-based strategy search for other themes.
+    const words = strategy
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 3);
+
+    const themeQuery = words
+      .map(w => `o:"${w}"`)
+      .join(' or ');
+
+    categories.push({
+      label: `Theme — "${strategy}"`,
+      cards: await fillCategory(
+        'theme cards',
+        `(${themeQuery})`,
+        18
+      )
+    });
+  }
+}
 
     // fill remainder with high-edhrec-rank on-color staples
     const nonlandTarget = 99 - landCountFor(landbase, categories);
