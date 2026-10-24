@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commander Deck Builder — Wild Coast Gaming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#10263D; --bg:#F5F4F0; --slate:#4B5663; --teal:#33A7B7; --mist:#C8CCD1; --orange:#FF8C42; }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Manrope',sans-serif; color:var(--ink); background:var(--bg); min-height:100vh; }
+
+  nav{ position:sticky; top:0; z-index:60; display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:rgba(245,244,240,0.85); backdrop-filter:blur(14px); border-bottom:1px solid rgba(16,38,61,0.08); }
+  .wordmark{ font-family:'Orbitron',sans-serif; font-weight:700; font-size:0.95rem; letter-spacing:0.03em; }
+  .wordmark span{ color:var(--teal); }
+  .nav-links{ display:flex; gap:22px; list-style:none; }
+  .nav-links a{ font-family:'Orbitron',sans-serif; font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--slate); text-decoration:none; }
+
+  .page-head{ text-align:center; padding:44px 24px 10px; }
+  .page-head .eyebrow{ font-family:'Orbitron',sans-serif; font-size:0.68rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--teal); margin-bottom:12px; }
+  .page-head h1{ font-family:'Orbitron',sans-serif; font-size:clamp(1.5rem, 4.5vw, 2.2rem); margin-bottom:10px; }
+  .page-head p{ color:var(--slate); max-width:480px; margin:0 auto; font-size:0.9rem; }
+
+  .builder{ max-width:700px; margin:30px auto 0; padding:0 24px; }
+  .panel{
+    border-radius:18px; padding:28px 24px;
+    background:rgba(255,255,255,0.6); border:1px solid rgba(16,38,61,0.12);
+    backdrop-filter:blur(14px);
+    box-shadow:0 10px 30px -18px rgba(16,38,61,0.3);
+  }
+  .field{ margin-bottom:20px; position:relative; }
+  .field label{ display:block; font-family:'Orbitron',sans-serif; font-size:0.66rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal); margin-bottom:8px; }
+  .field input[type=text], .field select{
+    width:100%; padding:12px 14px; border-radius:10px;
+    border:1px solid rgba(16,38,61,0.25); background:rgba(255,255,255,0.7);
+    font-family:'Manrope',sans-serif; font-size:0.92rem; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--teal); }
+  .hint{ font-size:0.74rem; color:var(--slate); margin-top:6px; }
+
+  .autocomplete-list{
+    position:absolute; top:100%; left:0; right:0; z-index:20;
+    background:#fff; border:1px solid rgba(16,38,61,0.15); border-radius:10px;
+    margin-top:4px; max-height:220px; overflow-y:auto;
+    box-shadow:0 14px 30px -14px rgba(16,38,61,0.3);
+    display:none;
+  }
+  .autocomplete-list div{ padding:10px 14px; font-size:0.88rem; cursor:pointer; }
+  .autocomplete-list div:hover{ background:rgba(51,167,183,0.1); }
+
+  .bracket-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:8px; }
+  .bracket-opt{ padding:10px 8px; text-align:center; border-radius:10px; border:1px solid rgba(16,38,61,0.2); background:rgba(255,255,255,0.5); cursor:pointer; font-size:0.74rem; font-weight:600; }
+  .bracket-opt b{ display:block; font-family:'Orbitron',sans-serif; font-size:0.9rem; }
+  .bracket-opt.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+
+  .build-btn{
+    width:100%; padding:15px; margin-top:6px; border:none; border-radius:999px; cursor:pointer;
+    background:var(--orange); color:#1a0e05;
+    font-family:'Orbitron',sans-serif; font-size:0.82rem; letter-spacing:0.05em; text-transform:uppercase;
+    transition:transform 0.15s ease, box-shadow 0.3s ease;
+  }
+  .build-btn:hover{ box-shadow:0 0 24px -4px rgba(255,140,66,0.6); }
+  .build-btn:active{ transform:scale(0.98); }
+  .build-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .status{ text-align:center; font-size:0.85rem; color:var(--slate); margin:18px 0; min-height:20px; }
+
+  .results{ max-width:900px; margin:20px auto 70px; padding:0 24px; }
+  .commander-banner{
+    display:flex; gap:18px; align-items:center;
+    background:var(--ink); color:var(--bg); border-radius:18px; padding:20px; margin-bottom:28px;
+  }
+  .commander-banner img{ width:90px; border-radius:8px; flex-shrink:0; }
+  .commander-banner .name{ font-family:'Orbitron',sans-serif; font-size:1.1rem; margin-bottom:4px; }
+  .commander-banner .meta{ font-size:0.8rem; color:var(--mist); }
+
+  .deck-summary{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:28px; }
+  .summary-chip{ padding:7px 14px; border-radius:999px; background:rgba(51,167,183,0.12); border:1px solid rgba(51,167,183,0.4); font-size:0.78rem; font-weight:600; }
+
+  .category{ margin-bottom:26px; }
+  .category h3{ font-family:'Orbitron',sans-serif; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .category h3::after{ content:""; flex:1; height:1px; background:rgba(51,167,183,0.25); }
+  .card-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:8px; }
+  .card-row{ display:flex; justify-content:space-between; gap:10px; padding:9px 12px; background:rgba(255,255,255,0.55); border:1px solid rgba(16,38,61,0.1); border-radius:8px; font-size:0.82rem; }
+  .card-row .cname{ font-weight:600; }
+  .card-row .ctype{ color:var(--slate); font-size:0.72rem; }
+  .card-row .cmana{ color:var(--slate); font-size:0.74rem; white-space:nowrap; }
+
+  .export-box{ margin-top:30px; }
+  .export-box textarea{ width:100%; height:160px; padding:12px; border-radius:10px; border:1px solid rgba(16,38,61,0.2); font-family:monospace; font-size:0.8rem; background:rgba(255,255,255,0.6); }
+  .copy-btn{ margin-top:10px; padding:10px 18px; border-radius:999px; border:1px solid var(--ink); background:transparent; cursor:pointer; font-family:'Orbitron',sans-serif; font-size:0.72rem; text-transform:uppercase; }
+  .copy-btn:hover{ background:var(--ink); color:var(--bg); }
+
+  .disclaimer{ font-size:0.76rem; color:var(--slate); background:rgba(255,140,66,0.08); border:1px solid rgba(255,140,66,0.3); border-radius:10px; padding:12px 14px; margin-top:30px; line-height:1.5; }
+
+  footer{ background:var(--ink); color:var(--mist); padding:36px 24px 24px; text-align:center; font-size:0.72rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wordmark">WILD COAST <span>GAMING</span></div>
+  <ul class="nav-links">
+    <li><a href="#">Home</a></li>
+    <li><a href="#">Shop</a></li>
+    <li><a href="#">Book a Table</a></li>
+  </ul>
+</nav>
+
+<div class="page-head">
+  <div class="eyebrow">Magic: The Gathering</div>
+  <h1>Commander Deck Builder</h1>
+  <p>Pick your commander, tell it what you want the deck to do, and get a full 99 pulled from live card data — ready to tune and take to the table.</p>
+</div>
+
+<div class="builder">
+  <div class="panel">
+    <div class="field">
+      <label for="commander-input">Commander</label>
+      <input type="text" id="commander-input" placeholder="Start typing a legendary creature..." autocomplete="off">
+      <div class="autocomplete-list" id="autocomplete-list"></div>
+      <div class="hint" id="commander-hint"></div>
+    </div>
+
+    <div class="field">
+      <label for="strategy-input">What do you want the deck to do?</label>
+      <input type="text" id="strategy-input" placeholder="e.g. tokens, lifegain, sacrifice, spellslinger, mill">
+      <div class="hint">A word or two is enough — we'll weight the deck toward cards that match.</div>
+    </div>
+
+    <div class="field">
+      <label for="landbase-select">Land Base</label>
+      <select id="landbase-select">
+        <option value="budget">Budget — mostly basic lands</option>
+        <option value="balanced" selected>Balanced — budget fixing + basics</option>
+        <option value="optimized">Optimized — best available fixing</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Bracket</label>
+      <div class="bracket-grid" id="bracket-grid">
+        <div class="bracket-opt" data-b="1"><b>1</b>Exhibition</div>
+        <div class="bracket-opt active" data-b="2"><b>2</b>Core</div>
+        <div class="bracket-opt" data-b="3"><b>3</b>Upgraded</div>
+        <div class="bracket-opt" data-b="4"><b>4</b>Optimized</div>
+        <div class="bracket-opt" data-b="5"><b>5</b>cEDH</div>
+      </div>
+      <div class="hint">Controls how many Game Changer cards (WotC's official high-power list) are allowed in.</div>
+    </div>
+
+    <button class="build-btn" id="build-btn" disabled>Select a commander first</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="results" id="results"></div>
+
+<footer>&copy; 2026 Wild Coast Gaming &bull; Pembrokeshire, Wales &bull; Card data from Scryfall</footer>
+
+<script>
+const API = 'https://api.scryfall.com';
+let selectedCommander = null;
+let bracket = 2;
+
+/* ---------------- commander autocomplete ---------------- */
+const input = document.getElementById('commander-input');
+const list = document.getElementById('autocomplete-list');
+const buildBtn = document.getElementById('build-btn');
+let debounceTimer;
+
+input.addEventListener('input', () => {
+  selectedCommander = null;
+  buildBtn.disabled = true;
+  buildBtn.textContent = 'Select a commander first';
+  clearTimeout(debounceTimer);
+  const q = input.value.trim();
+  if (q.length < 2) { list.style.display = 'none'; return; }
+  debounceTimer = setTimeout(async () => {
+    const res = await fetch(`${API}/cards/autocomplete?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    list.innerHTML = '';
+    (data.data || []).slice(0, 8).forEach(name => {
+      const item = document.createElement('div');
+      item.textContent = name;
+      item.addEventListener('click', () => selectCommander(name));
+      list.appendChild(item);
+    });
+    list.style.display = data.data && data.data.length ? 'block' : 'none';
+  }, 250);
+});
+
+async function selectCommander(name){
+  input.value = name;
+  list.style.display = 'none';
+  const res = await fetch(`${API}/cards/named?exact=${encodeURIComponent(name)}`);
+  const card = await res.json();
+
+  const isLegendaryCreature = /Legendary/.test(card.type_line) && /Creature|Planeswalker/.test(card.type_line);
+  const canBeCommander = isLegendaryCreature || /can be your commander/i.test(card.oracle_text || '');
+
+  if (!canBeCommander) {
+    document.getElementById('commander-hint').textContent = "⚠ That doesn't look like a legal commander — pick a legendary creature.";
+    buildBtn.disabled = true;
+    return;
+  }
+
+  selectedCommander = card;
+  document.getElementById('commander-hint').textContent = `Color identity: ${(card.color_identity.join(', ') || 'Colorless')}`;
+  buildBtn.disabled = false;
+  buildBtn.textContent = `Build ${name}'s 99`;
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.field')) list.style.display = 'none';
+});
+
+/* ---------------- bracket picker ---------------- */
+document.querySelectorAll('.bracket-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.bracket-opt').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    bracket = parseInt(opt.dataset.b, 10);
+  });
+});
+
+/* ---------------- scryfall helpers ---------------- */
+function idClause(colors){
+  return colors.length ? `id<=${colors.join('').toLowerCase()}` : 'id=c';
+}
+
+async function searchCards(query, limit){
+  const res = await fetch(`${API}/cards/search?q=${encodeURIComponent(query)}&order=edhrec&unique=cards`);
+  if (res.status === 404) return []; // no matches
+  const data = await res.json();
+  return (data.data || []).slice(0, limit);
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/* ---------------- deck assembly ---------------- */
+async function buildDeck(){
+  const statusEl = document.getElementById('status');
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = '';
+  buildBtn.disabled = true;
+
+  const commander = selectedCommander;
+  const colors = commander.color_identity;
+  const idq = idClause(colors);
+  const base = `${idq} legal:commander -t:land`;
+  const strategy = document.getElementById('strategy-input').value.trim();
+  const landbase = document.getElementById('landbase-select').value;
+
+  try {
+    statusEl.textContent = 'Checking Game Changers for this bracket…';
+    const gcCards = await searchCards(`${idq} legal:commander is:gamechanger`, 60);
+    const gcNames = new Set(gcCards.map(c => c.name));
+    const gcLimit = bracket <= 2 ? 0 : (bracket === 3 ? 3 : Infinity);
+    let gcUsed = 0;
+
+    const chosen = new Map(); // name -> card, de-duplicated across categories
+    function tryAdd(card){
+      if (chosen.has(card.name) || card.name === commander.name) return false;
+      if (gcNames.has(card.name)) {
+        if (gcUsed >= gcLimit) return false;
+        gcUsed++;
+      }
+      chosen.set(card.name, card);
+      return true;
+    }
+
+    async function fillCategory(label, query, target){
+      statusEl.textContent = `Pulling ${label}…`;
+      const pool = await searchCards(`${base} ${query}`, target * 4);
+      const added = [];
+      for (const c of pool) {
+        if (added.length >= target) break;
+        if (tryAdd(c)) added.push(c);
+      }
+      await sleep(80);
+      return added;
+    }
+
+    const categories = [];
+    categories.push({ label: 'Ramp', cards: await fillCategory('ramp', 'otag:ramp', 10) });
+    categories.push({ label: 'Card Draw', cards: await fillCategory('card draw', 'otag:card-advantage', 10) });
+    categories.push({ label: 'Removal & Interaction', cards: await fillCategory('removal', 'otag:removal', 9) });
+    categories.push({ label: 'Board Wipes', cards: await fillCategory('board wipes', '(o:"destroy all" or o:"exile all creatures" or o:"each creature gets -")', 3) });
+
+    if (strategy) {
+      const words = strategy.split(/\s+/).filter(Boolean).slice(0, 3);
+      const themeQuery = words.map(w => `o:"${w}"`).join(' or ');
+      categories.push({ label: `Theme — "${strategy}"`, cards: await fillCategory('theme cards', `(${themeQuery})`, 18) });
+    }
+
+    // fill remainder with high-edhrec-rank on-color staples
+    const nonlandTarget = 99 - landCountFor(landbase, categories);
+    const stillNeeded = Math.max(0, nonlandTarget - chosen.size);
+    if (stillNeeded > 0) {
+      statusEl.textContent = 'Rounding out with top-ranked staples…';
+      const fillerPool = await searchCards(`${base}`, stillNeeded * 3);
+      const filler = [];
+      for (const c of fillerPool) {
+        if (filler.length >= stillNeeded) break;
+        if (tryAdd(c)) filler.push(c);
+      }
+      categories.push({ label: 'Synergy & Staples', cards: filler });
+    }
+
+    // lands
+    statusEl.textContent = 'Building the mana base…';
+    const landCount = landCountFor(landbase, categories);
+    const lands = await buildLands(colors, landbase, landCount, Array.from(chosen.values()));
+
+    statusEl.textContent = '';
+    renderResults(commander, categories, lands, landbase, strategy);
+  } catch (err) {
+    statusEl.textContent = 'Something went wrong talking to Scryfall — please try again.';
+    console.error(err);
+  }
+  buildBtn.disabled = false;
+}
+
+function landCountFor(landbase, categoriesSoFar){
+  const rampCount = (categoriesSoFar.find(c => c.label === 'Ramp') || { cards: [] }).cards.length;
+  let base = 37;
+  if (rampCount >= 8) base -= 2;
+  return base;
+}
+
+async function buildLands(colors, landbase, totalLands, nonlandCards){
+  if (colors.length === 0) {
+    return [{ name: 'Wastes', count: totalLands, basic: true }];
+  }
+
+  const nonbasicTarget = { budget: 2, balanced: Math.min(10, totalLands - colors.length), optimized: Math.min(16, totalLands - colors.length) }[landbase];
+  const nonbasicPool = await searchCards(`t:land ${idClause(colors)} -is:basic legal:commander`, nonbasicTarget * 2);
+  const nonbasics = nonbasicPool.slice(0, nonbasicTarget);
+
+  // weight basics by colored mana symbol count across the nonland cards
+  const pipCounts = {};
+  colors.forEach(c => pipCounts[c] = 0);
+  nonlandCards.forEach(card => {
+    const cost = card.mana_cost || '';
+    colors.forEach(c => { pipCounts[c] += (cost.match(new RegExp(c, 'g')) || []).length; });
+  });
+  const totalPips = Object.values(pipCounts).reduce((a,b) => a+b, 0) || colors.length;
+  const basicRemaining = totalLands - nonbasics.length;
+  const basicNames = { W:'Plains', U:'Island', B:'Swamp', R:'Mountain', G:'Forest' };
+  const basics = colors.map(c => {
+    const share = pipCounts[c] / totalPips;
+    return { name: basicNames[c], count: Math.max(1, Math.round(share * basicRemaining)), basic: true };
+  });
+
+  // adjust rounding drift
+  let basicSum = basics.reduce((a,b) => a+b.count, 0);
+  let diff = basicRemaining - basicSum;
+  if (basics.length) basics[0].count += diff;
+
+  return [...nonbasics.map(c => ({ name: c.name, count: 1, basic: false, type_line: c.type_line })), ...basics];
+}
+
+/* ---------------- render ---------------- */
+function renderResults(commander, categories, lands, landbase, strategy){
+  const resultsEl = document.getElementById('results');
+  const totalNonland = categories.reduce((sum, c) => sum + c.cards.length, 0);
+  const totalLands = lands.reduce((sum, l) => sum + l.count, 0);
+
+  let html = `
+    <div class="commander-banner">
+      <img src="${commander.image_uris ? commander.image_uris.small : (commander.card_faces && commander.card_faces[0].image_uris.small)}" alt="${commander.name}">
+      <div>
+        <div class="name">${commander.name}</div>
+        <div class="meta">${commander.type_line} &bull; Bracket ${bracket} &bull; ${landbase} land base${strategy ? ` &bull; "${strategy}"` : ''}</div>
+      </div>
+    </div>
+    <div class="deck-summary">
+      <div class="summary-chip">${totalNonland} nonland cards</div>
+      <div class="summary-chip">${totalLands} lands</div>
+      <div class="summary-chip">${totalNonland + totalLands + 1} / 100 total</div>
+    </div>
+  `;
+
+  categories.forEach(cat => {
+    if (!cat.cards.length) return;
+    html += `<div class="category"><h3>${cat.label} (${cat.cards.length})</h3><div class="card-list">`;
+    cat.cards.forEach(c => {
+      html += `<div class="card-row"><div><div class="cname">${c.name}</div><div class="ctype">${c.type_line}</div></div><div class="cmana">${(c.mana_cost||'').replace(/[{}]/g,'')}</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  html += `<div class="category"><h3>Lands (${totalLands})</h3><div class="card-list">`;
+  lands.forEach(l => {
+    html += `<div class="card-row"><div class="cname">${l.count}&times; ${l.name}</div><div class="ctype">${l.basic ? 'Basic Land' : (l.type_line||'')}</div></div>`;
+  });
+  html += `</div></div>`;
+
+  const exportLines = [`1 ${commander.name}`];
+  categories.forEach(cat => cat.cards.forEach(c => exportLines.push(`1 ${c.name}`)));
+  lands.forEach(l => exportLines.push(`${l.count} ${l.name}`));
+
+  html += `
+    <div class="export-box">
+      <h3 style="font-family:'Orbitron',sans-serif; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal); margin-bottom:10px;">Export List</h3>
+      <textarea id="export-text" readonly>${exportLines.join('\n')}</textarea>
+      <button class="copy-btn" id="copy-btn">Copy to Clipboard</button>
+    </div>
+    <div class="disclaimer">
+      This is a solid, legal, popularity-weighted starting point built from live Scryfall data — not a hand-tuned EDHREC-style synergy build. Game Changers are capped per the official bracket rules, but things like intentional combo lines, mass land denial, or exact power balance still need a human eye. Treat this as a first draft to refine, not a finished decklist.
+    </div>
+  `;
+
+  resultsEl.innerHTML = html;
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    const ta = document.getElementById('export-text');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(ta.value);
+      } else {
+        ta.select();
+        document.execCommand('copy');
+      }
+      document.getElementById('copy-btn').textContent = 'Copied!';
+    } catch {
+      ta.select();
+      document.getElementById('copy-btn').textContent = 'Select & copy manually';
+    }
+    setTimeout(() => { document.getElementById('copy-btn').textContent = 'Copy to Clipboard'; }, 1500);
+  });
+  resultsEl.scrollIntoView({ behavior: 'smooth' });
+}
+
+buildBtn.addEventListener('click', buildDeck);
+</script>
+</body>
+</html>
