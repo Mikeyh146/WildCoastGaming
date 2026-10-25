@@ -49,7 +49,7 @@ footer{background:var(--ink);color:var(--mist);padding:30px 24px 24px;text-align
 <script>
 const API='https://api.scryfall.com';
 // Deploy moxfield-worker.js as a Cloudflare Worker, then paste its URL here.
-const MOXFIELD_WORKER_URL='';
+const MOXFIELD_WORKER_URL='wildcoastgaming-moxfield-bridge.7d7m6fhbrr.workers.dev';
 const $=id=>document.getElementById(id);
 let currentMode='link';
 function setMode(mode){currentMode=mode;$('tab-link').classList.toggle('active',mode==='link');$('tab-paste').classList.toggle('active',mode==='paste');$('link-pane').classList.toggle('hidden',mode!=='link');$('paste-pane').classList.toggle('hidden',mode!=='paste');$('status').textContent='';}
