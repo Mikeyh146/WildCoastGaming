@@ -57,42 +57,46 @@ export async function onRequestPost({ request, env }) {
 
   const prompt = buildPrompt(commander, cards);
 
-  
-  let aiRes;
-  console.log("DECK SYNERGY: reached AI request section");
-  try {
-    console.log("DECK SYNERGY: sending request to Anthropic");
-    aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-5-5',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      console.log("DECK SYNERGY: Anthropic responded", { status: aiRes.status });
-    });
-  } catch (e) {
-    console.error('Anthropic fetch failed', {
-      name: e?.name || 'UnknownError',
-      message: String(e?.message || e).slice(0, 500),
-    });
 
-    return new Response(
-      JSON.stringify({
-        error: 'Could not reach the AI analysis service.',
-      }),
-      {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
+let aiRes;
 
+console.log("DECK SYNERGY: reached AI request section");
+
+try {
+  console.log("DECK SYNERGY: sending request to Anthropic");
+
+  aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-5-5',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  console.log("DECK SYNERGY: Anthropic responded", {
+    status: aiRes.status
+  });
+
+} catch (e) {
+  console.error('Anthropic fetch failed', {
+    name: e?.name || 'UnknownError',
+    message: String(e?.message || e).slice(0, 500),
+  });
+
+  return new Response(
+    JSON.stringify({ error: 'Could not reach the AI analysis service.' }),
+    {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+}
 
 
 if (!aiRes.ok) {
