@@ -39,6 +39,74 @@ Every card in the DECK list above must appear exactly once in "cards". Keep syne
 }
 
 export async function onRequestPost({ request, env }) {
+    // Require a valid Supabase session before allowing AI analysis.
+  const supabaseUrl = env.SUPABASE_URL;
+  const supabaseKey =
+    env.SUPABASE_ANON_KEY ||
+    env.SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return new Response(
+      JSON.stringify({
+        error: 'Authentication is not configured on this server.'
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+
+  if (!tokenMatch) {
+    return new Response(
+      JSON.stringify({
+        error: 'Please sign in to use the deck analyser.'
+      }),
+      {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+
+  let authRes;
+
+  try {
+    authRes = await fetch(
+      `${supabaseUrl.replace(/\/$/, '')}/auth/v1/user`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${tokenMatch[1]}`
+        }
+      }
+    );
+  } catch {
+    return new Response(
+      JSON.stringify({
+        error: 'Could not verify your sign-in session.'
+      }),
+      {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+
+  if (!authRes.ok) {
+    return new Response(
+      JSON.stringify({
+        error: 'Your sign-in session is invalid or has expired. Please sign in again.'
+      }),
+      {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
   if (!env.ANTHROPIC_API_KEY) {
     return new Response(JSON.stringify({ error: 'AI synergy analysis is not configured on this server yet.' }), { status: 501, headers: { 'Content-Type': 'application/json' } });
   }
