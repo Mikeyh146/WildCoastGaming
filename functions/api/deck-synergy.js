@@ -72,9 +72,24 @@ export async function onRequestPost({ request, env }) {
         messages: [{ role: 'user', content: prompt }],
       }),
     });
+  } 
   } catch (e) {
-    return new Response(JSON.stringify({ error: 'Could not reach the AI analysis service.' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+    console.error('Anthropic fetch failed', {
+      name: e?.name || 'UnknownError',
+      message: String(e?.message || e).slice(0, 500),
+    });
+
+    return new Response(
+      JSON.stringify({
+        error: 'Could not reach the AI analysis service.',
+      }),
+      {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
+
 
 if (!aiRes.ok) {
   const errText = await aiRes.text().catch(() => '');
