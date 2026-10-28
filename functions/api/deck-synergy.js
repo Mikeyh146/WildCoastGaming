@@ -117,6 +117,25 @@ if (!aiRes.ok) {
       headers: { 'Content-Type': 'application/json' }
     }
   );
+} console.log("DECK SYNERGY: reading Anthropic response");
+
+let aiData;
+
+try {
+  aiData = await aiRes.json();
+  console.log("DECK SYNERGY: response JSON parsed successfully");
+} catch (e) {
+  console.error("DECK SYNERGY: failed to parse response JSON", {
+    message: String(e?.message || e).slice(0, 500)
+  });
+
+  return new Response(
+    JSON.stringify({ error: "Could not read the AI response." }),
+    {
+      status: 502,
+      headers: { "Content-Type": "application/json" }
+    }
+  );
 }
 
   const aiData = await aiRes.json();
