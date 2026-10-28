@@ -59,7 +59,9 @@ export async function onRequestPost({ request, env }) {
 
   
   let aiRes;
+  console.log("DECK SYNERGY: reached AI request section");
   try {
+    console.log("DECK SYNERGY: sending request to Anthropic");
     aiRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -72,6 +74,7 @@ export async function onRequestPost({ request, env }) {
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
+      console.log("DECK SYNERGY: Anthropic responded", { status: aiRes.status });
     });
   } catch (e) {
     console.error('Anthropic fetch failed', {
