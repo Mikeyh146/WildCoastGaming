@@ -76,10 +76,25 @@ export async function onRequestPost({ request, env }) {
     return new Response(JSON.stringify({ error: 'Could not reach the AI analysis service.' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
   }
 
-  if (!aiRes.ok) {
-    const errText = await aiRes.text().catch(() => '');
-    return new Response(JSON.stringify({ error: `AI service returned an error (${aiRes.status}).`, detail: errText.slice(0, 300) }), { status: 502, headers: { 'Content-Type': 'application/json' } });
-  }
+if (!aiRes.ok) {
+  const errText = await aiRes.text().catch(() => '');
+
+  console.error('Anthropic API error', {
+    status: aiRes.status,
+    detail: errText.slice(0, 1000)
+  });
+
+  return new Response(
+    JSON.stringify({
+      error: `AI service returned an error (${aiRes.status}).`,
+      detail: errText.slice(0, 1000)
+    }),
+    {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' }
+    }
+  );
+}
 
   const aiData = await aiRes.json();
   const rawText = (aiData.content || []).map(block => block.text || '').join('').trim();
