@@ -96,11 +96,30 @@ const $=id=>document.getElementById(id);
 
 let selectedCommander=null;
 let commanderDebounce;
+let reviewLimitReached=false;
+let reviewAllowanceKnown=false;
+
+function updateAnalyseButton(){
+  const button=$('analyse');
+  if(reviewLimitReached){button.disabled=true;button.textContent='Free review used';return;}
+  if(selectedCommander){button.disabled=false;button.textContent='Analyse my deck';return;}
+  button.disabled=true;button.textContent='Select a commander first';
+}
+
+async function checkReviewAllowance(){
+  if(!currentUser||!supabaseClient) return {ok:false, reason:'Please sign in to use the deck analyser.'};
+  const {data,error}=await supabaseClient.from('analysis_usage').select('completed_count,reserved_count').eq('user_id',currentUser.id).maybeSingle();
+  if(error){reviewAllowanceKnown=false;reviewLimitReached=true;updateAnalyseButton();return {ok:false, reason:'We could not verify your review allowance. Please refresh your account and try again.'};}
+  reviewAllowanceKnown=true;
+  const used=Number(data?.completed_count||0)+Number(data?.reserved_count||0);
+  reviewLimitReached=used>=1;
+  updateAnalyseButton();
+  return {ok:!reviewLimitReached, used};
+}
 $('commander-input').addEventListener('input',()=>{
   currentDeckId=null;
   selectedCommander=null;
-  $('analyse').disabled=true;
-  $('analyse').textContent='Select a commander first';
+  updateAnalyseButton();
   $('commander-hint').textContent="Required — this is what lets the review explain how each card supports your specific commander.";
   clearTimeout(commanderDebounce);
   const q=$('commander-input').value.trim();
@@ -130,13 +149,12 @@ async function selectCommanderCard(name){
   const canBeCommander=isLegendaryCreature||/can be your commander/i.test(card.oracle_text||'');
   if(!canBeCommander){
     $('commander-hint').textContent="⚠ That doesn't look like a legal commander — pick a legendary creature (or a card that says it can be your commander).";
-    selectedCommander=null;$('analyse').disabled=true;$('analyse').textContent='Select a commander first';
+    selectedCommander=null;updateAnalyseButton();
     return;
   }
   selectedCommander=card;
   $('commander-hint').textContent=`Colour identity: ${(card.color_identity||[]).join(', ')||'Colorless'}`;
-  $('analyse').disabled=false;
-  $('analyse').textContent='Analyse my deck';
+  updateAnalyseButton();
 }
 function parseDeck(text){const lines=text.split(/\r?\n/);const entries=[];for(const raw of lines){let line=raw.trim();if(!line||/^\[.*\]$/.test(line)||/^(commander|creatures|planeswalkers|instants|sorceries|artifacts|enchantments|lands|sideboard|maybeboard)\s*:?$/i.test(line))continue;line=line.replace(/^\s*(?:\d+\s*[.)xX]?\s*)?(?:\[[A-Z0-9]{2,6}\]\s*)?/,'');let countMatch=raw.trim().match(/^\s*(\d+)\s*[xX]?\s+(.+)$/);let count= countMatch?parseInt(countMatch[1],10):1;let name=countMatch?countMatch[2].trim():line;name=name.replace(/\s+\([A-Z0-9]{2,6}\)\s*\d+[a-z]?\s*$/i,'').replace(/\s+\*F\*\s*$/,'').trim();if(name&&!/^(deck|name|quantity)$/i.test(name))entries.push({name,count,raw});}return entries;}
 async function fetchCard(name){const r=await fetch(`${API}/cards/named?fuzzy=${encodeURIComponent(name)}`);if(!r.ok)throw new Error('Could not look up '+name);return r.json();}
@@ -279,6 +297,14 @@ async function analyseDeck(){
     return;
   }
 
+  // Stop before any Scryfall lookups or browser-side report generation if the
+  // account has already used its one included full review. The API enforces this too.
+  const allowance = await checkReviewAllowance();
+  if (!allowance.ok) {
+    $('status').textContent = allowance.reason || 'You have used your one included deck review. You can still open previously saved reports.';
+    return;
+  }
+
   if (!selectedCommander) {
     $('status').textContent = 'Select a commander first.';
     return;
@@ -400,6 +426,14 @@ async function analyseDeck(){
 
       const synData = await synRes.json();
 
+      if (synRes.status === 429 && synData.code === 'REVIEW_LIMIT_REACHED') {
+        reviewLimitReached=true;
+        updateAnalyseButton();
+        $('status').textContent = 'You have used your one included deck review. No new report has been generated. You can still open previously saved reports.';
+        await refreshAccount();
+        return;
+      }
+
       if (!synRes.ok) {
         throw new Error(
           synData.error || `AI service error (${synRes.status})`
@@ -419,18 +453,16 @@ async function analyseDeck(){
       synergyError
     );
 
+    await refreshAccount();
     $('status').textContent =
-      'Review ready. Card text and classifications come from Scryfall; strategic judgements are heuristic, and the synergy notes are AI-generated.';
+      'Review ready. Your included full review has now been used. You can still open saved reports, but a new review requires an additional allowance.';
 
   } catch (e) {
     $('status').textContent =
       'The review could not finish. Check your connection and try again.';
     console.error(e);
   } finally {
-    btn.disabled = !selectedCommander;
-    btn.textContent = selectedCommander
-      ? 'Analyse my deck'
-      : 'Select a commander first';
+    updateAnalyseButton();
   }
 }
 
@@ -559,7 +591,7 @@ async function openSavedReport(analysis,deck){
   $('decklist').value=snapshot.decklistText||snapshot.entries?.map(e=>`${e.count} ${e.name}`).join('\n')||deck?.decklist_text||'';
   if(snapshot.bracketIntent&&$('bracket-intent'))$('bracket-intent').value=snapshot.bracketIntent;
   selectedCommander=snapshot.cards.find(c=>String(c.name).toLowerCase()===String(snapshot.commanderOverride).toLowerCase())||snapshot.cards[0]||null;
-  if(selectedCommander){$('analyse').disabled=false;$('analyse').textContent='Analyse my deck';$('commander-hint').textContent=`Loaded saved commander: ${selectedCommander.name}`;}
+  if(selectedCommander){updateAnalyseButton();$('commander-hint').textContent=`Loaded saved commander: ${selectedCommander.name}`;}
   accountMessage('deck-status',`Opening saved report from ${safeDate(analysis.created_at)}. No new AI analysis is being requested.`);
   await renderReport(snapshot.cards,snapshot.entries||[],snapshot.commanderOverride||selectedCommander?.name,snapshot.synergy||null,snapshot.synergyError||null,{saved:true});
   $('status').textContent='Saved report opened. Re-analyse only if you want a fresh review of the current deck.';
@@ -587,13 +619,17 @@ async function refreshAccount(){
   $('auth-form').classList.toggle('hidden',signedIn);
   $('auth-login-tab').classList.toggle('hidden',signedIn);$('auth-register-tab').classList.toggle('hidden',signedIn);
   $('sign-out').classList.toggle('hidden',!signedIn);$('save-deck').classList.toggle('hidden',!signedIn);$('refresh-decks').classList.toggle('hidden',!signedIn);
-  if(!signedIn){$('profile-summary').innerHTML='<p>Sign in to see your profile and saved decks here.</p>';$('saved-decks').innerHTML='';return;}
+  if(!signedIn){reviewLimitReached=false;reviewAllowanceKnown=false;updateAnalyseButton();$('profile-summary').innerHTML='<p>Sign in to see your profile and saved decks here.</p>';$('saved-decks').innerHTML='';return;}
   const [{data:profile,error:profileError},{data:usage,error:usageError}]=await Promise.all([
     supabaseClient.from('profiles').select('display_name,plan,created_at').eq('id',currentUser.id).maybeSingle(),
     supabaseClient.from('analysis_usage').select('completed_count,reserved_count').eq('user_id',currentUser.id).maybeSingle()
   ]);
+  reviewAllowanceKnown=!usageError;
+  const reviewsUsed=Number(usage?.completed_count||0)+Number(usage?.reserved_count||0);
+  reviewLimitReached=!!usageError||reviewsUsed>=1;
+  updateAnalyseButton();
   const displayName=profile?.display_name||currentUser.user_metadata?.full_name||currentUser.email;
-  $('profile-summary').innerHTML=`<div class="profile-row"><span>Name</span><strong>${escapeHtml(displayName||'')}</strong></div><div class="profile-row"><span>Email</span><strong>${escapeHtml(currentUser.email||'')}</strong></div><div class="profile-row"><span>Account type</span><strong>${escapeHtml(profile?.plan||'free')}</strong></div><div class="profile-row"><span>AI analyses used</span><strong>${Number(usage?.completed_count||0)} of 1</strong></div><p class="hint">Profile created ${safeDate(profile?.created_at||currentUser.created_at)}. Review-credit enforcement and administrator grants are the next server-side upgrade.</p>`;
+  $('profile-summary').innerHTML=`<div class="profile-row"><span>Name</span><strong>${escapeHtml(displayName||'')}</strong></div><div class="profile-row"><span>Email</span><strong>${escapeHtml(currentUser.email||'')}</strong></div><div class="profile-row"><span>Account type</span><strong>${escapeHtml(profile?.plan||'free')}</strong></div><div class="profile-row"><span>Full deck reviews used</span><strong>${usageError?'Unavailable':`${reviewsUsed} of 1`}</strong></div><p class="hint">Your free account includes one full AI deck review. You can continue to open saved reports after using it.</p>`;
   if(profileError)accountMessage('deck-status','Account connected, but profile details could not be loaded. Check that the database setup SQL has been run.',true);
   else if(usageError)accountMessage('deck-status','Profile loaded. Usage details are unavailable until the database setup is complete.',true);
   await loadSavedDecks();
