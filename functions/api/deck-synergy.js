@@ -117,7 +117,9 @@ if (!aiRes.ok) {
       headers: { 'Content-Type': 'application/json' }
     }
   );
-} console.log("DECK SYNERGY: reading Anthropic response");
+}
+
+console.log("DECK SYNERGY: reading Anthropic response");
 
 let aiData;
 
@@ -138,16 +140,45 @@ try {
   );
 }
 
-  const aiData = await aiRes.json();
-  const rawText = (aiData.content || []).map(block => block.text || '').join('').trim();
+const rawText = (aiData.content || [])
+  .map(block => block.text || '')
+  .join('')
+  .trim();
 
-  let parsed;
-  try {
-    const cleaned = rawText.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    return new Response(JSON.stringify({ error: 'The AI response could not be parsed as JSON.', raw: rawText.slice(0, 500) }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+let parsed;
+
+try {
+  const cleaned = rawText
+    .replace(/^```(json)?/i, '')
+    .replace(/```$/, '')
+    .trim();
+
+  parsed = JSON.parse(cleaned);
+} catch (e) {
+  console.error("DECK SYNERGY: AI returned invalid JSON", {
+    message: String(e?.message || e).slice(0, 500),
+    responsePreview: rawText.slice(0, 500)
+  });
+
+  return new Response(
+    JSON.stringify({
+      error: 'The AI response could not be parsed as JSON.',
+      raw: rawText.slice(0, 500)
+    }),
+    {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' }
+    }
+  );
+}
+
+console.log("DECK SYNERGY: returning successful review");
+
+return new Response(
+  JSON.stringify(parsed),
+  {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
   }
-
-  return new Response(JSON.stringify(parsed), { status: 200, headers: { 'Content-Type': 'application/json' } });
+);
 }
