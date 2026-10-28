@@ -74,7 +74,7 @@ footer{background:var(--ink);color:var(--mist);padding:30px 24px 24px;text-align
 <section class="account-panel hidden" id="account-panel" aria-label="Account and deck manager"><div class="account-card"><div class="account-grid">
 <div id="auth-column"><h2>Wild Coast account</h2><p>Sign in to save your Commander decklists and manage your profile. Your account foundation can later connect to the Wild Coast shop.</p><div class="account-tabs"><button type="button" id="auth-login-tab" class="active">Sign in</button><button type="button" id="auth-register-tab">Create account</button></div>
 <form id="auth-form"><div class="field hidden" id="auth-name-wrap"><label for="auth-name">Display name</label><input id="auth-name" type="text" autocomplete="name" placeholder="Your name"></div><div class="field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="field"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></div><button class="btn btn-primary" id="auth-submit" type="submit">Sign in</button></form><div class="account-status" id="auth-status" role="status" aria-live="polite"></div><button class="account-pill hidden" id="sign-out" type="button">Sign out</button>
-</div><div id="profile-column"><h2>My profile &amp; decks</h2><div id="profile-summary"><p>Sign in to see your profile and saved decks here.</p></div><div class="actions" style="margin-top:12px"><button class="btn btn-secondary hidden" id="save-deck" type="button">Save current deck</button><button class="btn btn-secondary hidden" id="refresh-decks" type="button">Refresh library</button></div><div class="account-status" id="deck-status" role="status" aria-live="polite"></div><div id="saved-decks" class="account-list"></div><div class="notice" style="margin-top:14px"><strong>Shop connection planned:</strong> purchase history and orders will appear here once we connect your shop platform securely. No order data is shown until that integration exists.</div></div>
+</div><div id="profile-column"><h2>My profile &amp; decks</h2><div id="profile-summary"><p>Sign in to see your profile and saved decks here.</p></div><div class="actions" style="margin-top:12px"><button class="btn btn-secondary hidden" id="save-deck" type="button">Save current deck</button><button class="btn btn-secondary hidden" id="refresh-decks" type="button">Refresh library</button></div><div class="account-status" id="deck-status" role="status" aria-live="polite"></div><div id="saved-decks" class="account-list"></div><section id="admin-tools" class="notice hidden" style="margin-top:18px"><h2 style="margin-bottom:8px">Admin review credits</h2><p>Grant extra full AI reviews to an account. Each grant is recorded in the admin audit log.</p><div class="field"><label for="admin-user-select">Account</label><select id="admin-user-select"><option value="">Load accounts…</option></select></div><div class="field"><label for="admin-credit-amount">Extra reviews to grant</label><input id="admin-credit-amount" type="number" min="1" max="100" step="1" value="1"></div><div class="field"><label for="admin-credit-reason">Reason (optional)</label><input id="admin-credit-reason" type="text" maxlength="300" placeholder="Support request, promotion, correction…"></div><div class="actions"><button class="btn btn-primary" id="admin-grant-credits" type="button">Grant reviews</button><button class="btn btn-secondary" id="admin-refresh-users" type="button">Refresh accounts</button></div><div class="account-status" id="admin-status" role="status" aria-live="polite"></div><div id="admin-user-overview" class="account-list"></div><h3 style="font:700 .72rem Orbitron,sans-serif;margin-top:16px">Recent credit grants</h3><div id="admin-credit-events" class="account-list"></div></section><div class="notice" style="margin-top:14px"><strong>Shop connection planned:</strong> purchase history and orders will appear here once we connect your shop platform securely. No order data is shown until that integration exists.</div></div>
 </div></div></section>
 <header class="page-head"><div class="eyebrow">Magic: The Gathering</div><h1>Commander Deck Reviewer</h1><p>See what your deck does well, find the gaps, and get practical upgrade ideas. Built for strategy, not just a pile of card counts.</p></header>
 <main class="wrap">
@@ -108,13 +108,18 @@ function updateAnalyseButton(){
 
 async function checkReviewAllowance(){
   if(!currentUser||!supabaseClient) return {ok:false, reason:'Please sign in to use the deck analyser.'};
-  const {data,error}=await supabaseClient.from('analysis_usage').select('completed_count,reserved_count').eq('user_id',currentUser.id).maybeSingle();
-  if(error){reviewAllowanceKnown=false;reviewLimitReached=true;updateAnalyseButton();return {ok:false, reason:'We could not verify your review allowance. Please refresh your account and try again.'};}
+  const [{data:profile,error:profileError},{data:usage,error:usageError}]=await Promise.all([
+    supabaseClient.from('profiles').select('plan,bonus_analysis_credits').eq('id',currentUser.id).maybeSingle(),
+    supabaseClient.from('analysis_usage').select('completed_count,reserved_count').eq('user_id',currentUser.id).maybeSingle()
+  ]);
+  if(profileError||usageError||!profile){reviewAllowanceKnown=false;reviewLimitReached=true;updateAnalyseButton();return {ok:false,reason:'We could not verify your review allowance. Please refresh your account and try again.'};}
   reviewAllowanceKnown=true;
-  const used=Number(data?.completed_count||0)+Number(data?.reserved_count||0);
-  reviewLimitReached=used>=1;
+  const used=Number(usage?.completed_count||0)+Number(usage?.reserved_count||0);
+  const baseLimit=profile.plan==='free'?1:0;
+  const totalLimit=baseLimit+Math.max(0,Number(profile.bonus_analysis_credits||0));
+  reviewLimitReached=used>=totalLimit;
   updateAnalyseButton();
-  return {ok:!reviewLimitReached, used};
+  return {ok:!reviewLimitReached,used,totalLimit,remaining:Math.max(0,totalLimit-used)};
 }
 $('commander-input').addEventListener('input',()=>{
   currentDeckId=null;
@@ -619,20 +624,25 @@ async function refreshAccount(){
   $('auth-form').classList.toggle('hidden',signedIn);
   $('auth-login-tab').classList.toggle('hidden',signedIn);$('auth-register-tab').classList.toggle('hidden',signedIn);
   $('sign-out').classList.toggle('hidden',!signedIn);$('save-deck').classList.toggle('hidden',!signedIn);$('refresh-decks').classList.toggle('hidden',!signedIn);
-  if(!signedIn){reviewLimitReached=false;reviewAllowanceKnown=false;updateAnalyseButton();$('profile-summary').innerHTML='<p>Sign in to see your profile and saved decks here.</p>';$('saved-decks').innerHTML='';return;}
+  if(!signedIn){reviewLimitReached=false;reviewAllowanceKnown=false;updateAnalyseButton();$('admin-tools').classList.add('hidden');$('profile-summary').innerHTML='<p>Sign in to see your profile and saved decks here.</p>';$('saved-decks').innerHTML='';return;}
   const [{data:profile,error:profileError},{data:usage,error:usageError}]=await Promise.all([
-    supabaseClient.from('profiles').select('display_name,plan,created_at').eq('id',currentUser.id).maybeSingle(),
+    supabaseClient.from('profiles').select('display_name,email,plan,role,bonus_analysis_credits,created_at').eq('id',currentUser.id).maybeSingle(),
     supabaseClient.from('analysis_usage').select('completed_count,reserved_count').eq('user_id',currentUser.id).maybeSingle()
   ]);
-  reviewAllowanceKnown=!usageError;
+  reviewAllowanceKnown=!usageError&&!profileError&&!!profile;
   const reviewsUsed=Number(usage?.completed_count||0)+Number(usage?.reserved_count||0);
-  reviewLimitReached=!!usageError||reviewsUsed>=1;
+  const baseLimit=profile?.plan==='free'?1:0;
+  const bonusCredits=Math.max(0,Number(profile?.bonus_analysis_credits||0));
+  const totalLimit=baseLimit+bonusCredits;
+  reviewLimitReached=!reviewAllowanceKnown||reviewsUsed>=totalLimit;
   updateAnalyseButton();
   const displayName=profile?.display_name||currentUser.user_metadata?.full_name||currentUser.email;
-  $('profile-summary').innerHTML=`<div class="profile-row"><span>Name</span><strong>${escapeHtml(displayName||'')}</strong></div><div class="profile-row"><span>Email</span><strong>${escapeHtml(currentUser.email||'')}</strong></div><div class="profile-row"><span>Account type</span><strong>${escapeHtml(profile?.plan||'free')}</strong></div><div class="profile-row"><span>Full deck reviews used</span><strong>${usageError?'Unavailable':`${reviewsUsed} of 1`}</strong></div><p class="hint">Your free account includes one full AI deck review. You can continue to open saved reports after using it.</p>`;
+  $('profile-summary').innerHTML=`<div class="profile-row"><span>Name</span><strong>${escapeHtml(displayName||'')}</strong></div><div class="profile-row"><span>Email</span><strong>${escapeHtml(currentUser.email||'')}</strong></div><div class="profile-row"><span>Account type</span><strong>${escapeHtml(profile?.plan||'free')}</strong></div><div class="profile-row"><span>Full deck reviews used</span><strong>${reviewAllowanceKnown?`${reviewsUsed} of ${totalLimit}`:'Unavailable'}</strong></div><div class="profile-row"><span>Extra reviews granted</span><strong>${profileError?'Unavailable':bonusCredits}</strong></div><div class="profile-row"><span>Reviews remaining</span><strong>${reviewAllowanceKnown?Math.max(0,totalLimit-reviewsUsed):'Unavailable'}</strong></div><p class="hint">Saved reports remain available after your review allowance is used. Additional full reviews can be granted by Wild Coast Gaming.</p>`;
+  $('admin-tools').classList.toggle('hidden',profile?.role!=='admin');
   if(profileError)accountMessage('deck-status','Account connected, but profile details could not be loaded. Check that the database setup SQL has been run.',true);
   else if(usageError)accountMessage('deck-status','Profile loaded. Usage details are unavailable until the database setup is complete.',true);
   await loadSavedDecks();
+  if(profile?.role==='admin')loadAdminData().catch(e=>{console.error(e);accountMessage('admin-status','Could not load admin account data.',true);});
 }
 async function loadSavedDecks(){
   if(!currentUser||!supabaseClient)return;
@@ -651,6 +661,47 @@ async function loadSavedDecks(){
   $('saved-decks').querySelectorAll('[data-delete-deck]').forEach(btn=>btn.addEventListener('click',()=>deleteSavedDeck(btn.dataset.deleteDeck)));
 }
 async function hashDeck(commanderName,decklist){const normal=`${(commanderName||'').trim().toLowerCase()}\n${decklist.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).sort((a,b)=>a.localeCompare(b)).join('\n')}`;const bytes=new TextEncoder().encode(normal);const digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function adminApi(path,options={}){
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(!session?.access_token)throw new Error('Please sign in again.');
+  const response=await fetch(path,{...options,headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`,...(options.headers||{})}});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||`Admin request failed (${response.status}).`);
+  return data;
+}
+async function loadAdminData(){
+  if(!currentUser||!supabaseClient)return;
+  $('admin-status').textContent='Loading accounts and credit history…';
+  const data=await adminApi('/api/admin-credits');
+  const users=data.users||[];
+  const select=$('admin-user-select');
+  const previous=select.value;
+  select.innerHTML='<option value="">Choose an account…</option>'+users.map(u=>`<option value="${escapeHtml(u.id)}">${escapeHtml(u.email||u.display_name||u.id)}${u.role==='admin'?' · admin':''}</option>`).join('');
+  if(users.some(u=>u.id===previous))select.value=previous;
+  $('admin-user-overview').innerHTML=users.length?users.map(u=>`<div class="saved-deck"><div><strong>${escapeHtml(u.email||u.display_name||u.id)}</strong><small>${escapeHtml(u.display_name||'No display name')} · ${escapeHtml(u.plan)} · ${u.used} used of ${u.total_limit} · ${u.remaining} remaining · ${u.bonus_analysis_credits} bonus</small></div></div>`).join(''):'<p>No accounts found.</p>';
+  const events=data.events||[];
+  $('admin-credit-events').innerHTML=events.length?events.map(e=>{const target=users.find(u=>u.id===e.target_user_id);const admin=users.find(u=>u.id===e.admin_user_id);return `<div class="saved-deck"><div><strong>+${Number(e.amount)} reviews · ${escapeHtml(target?.email||e.target_user_id)}</strong><small>Granted by ${escapeHtml(admin?.email||e.admin_user_id)} · ${safeDate(e.created_at)}${e.reason?` · ${escapeHtml(e.reason)}`:''}</small></div></div>`;}).join(''):'<p>No bonus review grants recorded yet.</p>';
+  $('admin-status').textContent=`Loaded ${users.length} account${users.length===1?'':'s'}.`;
+}
+async function grantAdminCredits(){
+  const button=$('admin-grant-credits');
+  const userId=$('admin-user-select').value;
+  const amount=Number($('admin-credit-amount').value);
+  const reason=$('admin-credit-reason').value.trim();
+  if(!userId){$('admin-status').textContent='Choose an account first.';return;}
+  if(!Number.isInteger(amount)||amount<1||amount>100){$('admin-status').textContent='Choose between 1 and 100 extra reviews.';return;}
+  button.disabled=true;$('admin-status').textContent='Granting review credits…';
+  try{
+    const result=await adminApi('/api/admin-credits',{method:'POST',body:JSON.stringify({user_id:userId,amount,reason})});
+    $('admin-status').textContent=`Granted ${result.granted} extra review${result.granted===1?'':'s'}. This account now has ${result.bonus_analysis_credits} bonus reviews in total.`;
+    $('admin-credit-reason').value='';
+    await loadAdminData();
+    if(userId===currentUser.id)await refreshAccount();
+  }catch(e){console.error(e);$('admin-status').textContent=e.message||'Could not grant credits.';}
+  finally{button.disabled=false;}
+}
+$('admin-refresh-users').addEventListener('click',()=>loadAdminData().catch(e=>{$('admin-status').textContent=e.message||'Could not load accounts.';}));
+$('admin-grant-credits').addEventListener('click',grantAdminCredits);
 $('save-deck').addEventListener('click',async()=>{
   if(!currentUser){accountMessage('deck-status','Please sign in first.',true);return;}
   const commanderName=selectedCommander?.name||$('commander-input').value.trim();const decklist=$('decklist').value.trim();
