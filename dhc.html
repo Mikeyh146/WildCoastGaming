@@ -47,6 +47,7 @@ footer{background:var(--ink);color:var(--mist);padding:30px 24px 24px;text-align
 .fit-meter{margin-top:9px}.fit-meter-head{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--slate);margin-bottom:5px}.fit-meter-head b{font:700 .72rem Orbitron,sans-serif;color:var(--teal)}.fit-track{height:6px;border-radius:99px;background:rgba(16,38,61,.1);overflow:hidden}.fit-track span{display:block;height:100%;background:linear-gradient(90deg,var(--orange),var(--teal));border-radius:99px}.fit-meter small{display:block;font-size:.65rem;color:var(--slate);line-height:1.45;margin-top:5px}.swap-row{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:10px;align-items:stretch;padding:12px 0;border-bottom:1px solid var(--line)}.swap-side{padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:6px;min-width:0}.swap-side.add{background:rgba(51,167,183,.09);border:1px solid rgba(51,167,183,.22)}.swap-side.cut{background:rgba(255,140,66,.08);border:1px solid rgba(255,140,66,.2)}.swap-label{font:700 .58rem Orbitron,sans-serif;letter-spacing:.08em;color:var(--teal)}.swap-side.cut .swap-label{color:#9b4b0b}.swap-side strong{font-size:.82rem;overflow-wrap:anywhere}.swap-side small{font-size:.7rem;line-height:1.5;color:var(--slate)}.fit-badge{font-size:.68rem;font-weight:800;color:#187987}.swap-arrow{display:grid;place-items:center;font-size:1.2rem;color:var(--teal)}@media(max-width:600px){.swap-row{grid-template-columns:1fr}.swap-arrow{transform:rotate(90deg)}}
 
 /* Account and deck library */
+.account-strip,.account-panel{display:none!important}
 .account-strip{max-width:1000px;margin:20px auto 0;padding:0 24px;display:flex;justify-content:flex-end;gap:10px;align-items:center}.account-pill{border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:999px;padding:9px 14px;font:700 .68rem 'Orbitron',sans-serif;cursor:pointer;color:var(--ink)}.account-panel{max-width:1000px;margin:14px auto 0;padding:0 24px}.account-card{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 10px 30px -18px rgba(16,38,61,.2)}.account-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:22px}.account-card h2{font:700 .9rem 'Orbitron',sans-serif;margin-bottom:10px}.account-card p{font-size:.8rem;line-height:1.6;color:var(--slate)}.account-card .field{margin-top:14px;margin-bottom:12px}.account-card .field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font:400 .85rem 'Manrope',sans-serif}.account-tabs{display:flex;gap:8px;margin:14px 0}.account-tabs button{flex:1;padding:9px;border:1px solid var(--line);border-radius:8px;background:transparent;cursor:pointer;font-weight:700;color:var(--slate)}.account-tabs button.active{background:var(--ink);color:white}.account-list{display:grid;gap:9px;margin-top:12px}.saved-deck{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.7)}.saved-deck strong{display:block;font-size:.8rem}.saved-deck small{display:block;margin-top:4px;color:var(--slate);font-size:.7rem}.saved-deck-actions{display:flex;gap:6px;flex-wrap:wrap}.saved-deck-actions button{border:1px solid var(--line);background:white;border-radius:7px;padding:7px 9px;font-size:.68rem;font-weight:700;cursor:pointer}.account-status{min-height:18px;margin-top:10px;font-size:.77rem;color:var(--slate);line-height:1.5}.profile-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.8rem}.profile-row:last-child{border-bottom:0}@media(max-width:720px){.account-grid{grid-template-columns:1fr}.account-strip{justify-content:center}.saved-deck{align-items:flex-start;flex-direction:column}.account-panel{padding:0 14px}.account-strip{padding:0 14px}}
 
 
@@ -74,7 +75,7 @@ footer{background:var(--ink);color:var(--mist);padding:30px 24px 24px;text-align
 </style>
 </head>
 <body>
-<nav><div class="wordmark">WILD COAST <span>GAMING</span></div><ul class="nav-links"><li><a href="index.html">Home</a></li><li><a href="#import">Review Deck</a></li><li><a href="#how">How it works</a></li></ul></nav>
+<nav><div class="wordmark">WILD COAST <span>GAMING</span></div><ul class="nav-links"><li><a href="index.html">Home</a></li><li><a href="Profile.html">My Profile</a></li><li><a href="#import">Review Deck</a></li><li><a href="#how">How it works</a></li></ul></nav>
 <div class="account-strip"><button class="account-pill" id="account-toggle" type="button">Sign in / My account</button><span id="account-nav-status" class="hint" style="margin:0"></span></div>
 <section class="account-panel hidden" id="account-panel" aria-label="Account and deck manager"><div class="account-card"><div class="account-grid">
 <div id="auth-column"><h2>Wild Coast account</h2><p>Sign in to save your Commander decklists and manage your profile. Your account foundation can later connect to the Wild Coast shop.</p><div class="account-tabs"><button type="button" id="auth-login-tab" class="active">Sign in</button><button type="button" id="auth-register-tab">Create account</button></div>
@@ -87,13 +88,13 @@ footer{background:var(--ink);color:var(--mist);padding:30px 24px 24px;text-align
 <div class="field" style="position:relative;"><label for="commander-input">1. Your commander</label><input id="commander-input" type="text" placeholder="Start typing a legendary creature..." autocomplete="off"><div class="autocomplete-list" id="commander-autocomplete"></div><div class="hint" id="commander-hint">Required — this is what lets the review explain how each card supports your specific commander.</div></div>
 <div class="field"><label for="decklist">2. Decklist</label><textarea id="decklist" placeholder="1 Sol Ring&#10;1 Swords to Plowshares&#10;36 Forest&#10;..."></textarea><div class="hint">Accepts common exports such as "1 Sol Ring" or "Sol Ring". Don't include the commander here — it's selected above. On Moxfield, open your deck, use Export, and paste the list here (direct link-import isn't reliable — Moxfield's own anti-bot protection blocks it, not something fixable on our end).</div></div>
 <div class="field"><label for="bracket-intent">3. Intended Commander bracket</label><select id="bracket-intent"><option value="auto">Help me estimate</option><option value="1">Bracket 1 · Exhibition</option><option value="2">Bracket 2 · Core</option><option value="3">Bracket 3 · Upgraded</option><option value="4">Bracket 4 · Optimized</option><option value="5">Bracket 5 · cEDH</option></select><div class="hint">The official system prioritises intended gameplay and pre-game conversation. Choose your target if you know it; otherwise we'll show a preliminary estimate from the deck's signals.</div></div>
-<div class="actions"><button class="btn btn-primary" id="analyse" type="button" disabled>Select a commander first</button></div>
+<div class="actions"><button class="btn btn-primary" id="analyse" type="button" disabled>Select a commander first</button><button class="btn btn-secondary" id="save-deck-main" type="button">Save deck to profile</button><a class="btn btn-secondary" href="Profile.html" style="display:inline-flex;align-items:center;text-decoration:none">My profile</a></div>
 <div class="status" id="status" role="status" aria-live="polite"></div>
 <div class="notice" id="how"><strong>What this checks:</strong> deck size, duplicates, colour identity, land count, mana curve, ramp/draw/removal/wipe counts, plus an in-depth AI read of every card's actual synergy with your commander, overall deck strengths and weaknesses, and a health grade. Suggestions are a strong starting point, not a promise of tournament-level tuning.</div>
 </section>
 <section class="results" id="results" aria-live="polite"></section>
 </main>
-<footer>&copy; 2026 Wild Coast Gaming &bull; Pembrokeshire, Wales &bull; Card data from Scryfall</footer>
+<footer>&copy; 2026 Wild Coast Gaming &bull; Pembrokeshire, Wales &bull; <a href="index.html">Home</a> &bull; <a href="Profile.html">My Profile</a> &bull; Card data from Scryfall</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const API='https://api.scryfall.com';
@@ -613,7 +614,7 @@ try {
   if(window.supabase?.createClient) supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 } catch(e) { console.error('Supabase client could not initialise',e); }
 const accountPanel=$('account-panel');
-$('account-toggle').addEventListener('click',()=>{accountPanel.classList.toggle('hidden');if(!accountPanel.classList.contains('hidden'))accountPanel.scrollIntoView({behavior:'smooth',block:'start'});});
+$('account-toggle').addEventListener('click',()=>{window.location.href='Profile.html';});
 function setAuthMode(mode){authMode=mode;const registering=mode==='register';$('auth-login-tab').classList.toggle('active',!registering);$('auth-register-tab').classList.toggle('active',registering);$('auth-name-wrap').classList.toggle('hidden',!registering);$('auth-submit').textContent=registering?'Create account':'Sign in';$('auth-password').autocomplete=registering?'new-password':'current-password';$('auth-status').textContent='';}
 $('auth-login-tab').addEventListener('click',()=>setAuthMode('login'));
 $('auth-register-tab').addEventListener('click',()=>setAuthMode('register'));
@@ -648,8 +649,36 @@ async function refreshAccount(){
   if(profileError)accountMessage('deck-status','Account connected, but profile details could not be loaded. Check that the database setup SQL has been run.',true);
   else if(usageError)accountMessage('deck-status','Profile loaded. Usage details are unavailable until the database setup is complete.',true);
   await loadSavedDecks();
+  await handleReviewerDeepLink();
   if(profile?.role==='admin')loadAdminData().catch(e=>{console.error(e);accountMessage('admin-status','Could not load admin account data.',true);});
 }
+let reviewerDeepLinkHandled=false;
+async function handleReviewerDeepLink(){
+  if(reviewerDeepLinkHandled||!currentUser||!supabaseClient)return;
+  const params=new URLSearchParams(window.location.search);
+  const deckId=params.get('deck');
+  const reportId=params.get('report');
+  if(!deckId&&!reportId){reviewerDeepLinkHandled=true;return;}
+  reviewerDeepLinkHandled=true;
+  try{
+    if(deckId){
+      const {data,error}=await supabaseClient.from('decks').select('id,name,commander_name,decklist_text,deck_hash,created_at,updated_at').eq('id',deckId).eq('user_id',currentUser.id).maybeSingle();
+      if(error)throw error;
+      if(!data){accountMessage('deck-status','That saved deck could not be found in your account.',true);return;}
+      await loadDeckIntoEditor(data);
+      return;
+    }
+    if(reportId){
+      const {data:analysis,error}=await supabaseClient.from('deck_analyses').select('id,deck_id,deck_hash,result_json,created_at').eq('id',reportId).eq('user_id',currentUser.id).maybeSingle();
+      if(error)throw error;
+      if(!analysis){accountMessage('deck-status','That saved report could not be found in your account.',true);return;}
+      let deck=null;
+      if(analysis.deck_id){const result=await supabaseClient.from('decks').select('id,name,commander_name,decklist_text,deck_hash,created_at,updated_at').eq('id',analysis.deck_id).eq('user_id',currentUser.id).maybeSingle();if(!result.error)deck=result.data;}
+      await openSavedReport(analysis,deck);
+    }
+  }catch(e){console.error(e);accountMessage('deck-status',e.message||'Could not open the selected saved item.',true);}
+}
+
 async function loadSavedDecks(){
   if(!currentUser||!supabaseClient)return;
   $('saved-decks').innerHTML='<p>Loading your deck library…</p>';
@@ -758,6 +787,7 @@ async function grantAdminCredits(){
 }
 $('admin-refresh-users').addEventListener('click',()=>loadAdminData().catch(e=>{$('admin-status').textContent=e.message||'Could not load accounts.';}));
 $('admin-grant-credits').addEventListener('click',grantAdminCredits);
+$('save-deck-main').addEventListener('click',()=>{if(!currentUser){window.location.href='Profile.html';return;}$('save-deck').click();});
 $('save-deck').addEventListener('click',async()=>{
   if(!currentUser){accountMessage('deck-status','Please sign in first.',true);return;}
   const commanderName=selectedCommander?.name||$('commander-input').value.trim();const decklist=$('decklist').value.trim();
