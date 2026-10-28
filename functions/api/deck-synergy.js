@@ -140,10 +140,37 @@ try {
   );
 }
 
+console.log("DECK SYNERGY: Anthropic response details", {
+  stop_reason: aiData.stop_reason,
+  content_blocks: (aiData.content || []).map(block => ({
+    type: block.type,
+    text_length: typeof block.text === "string" ? block.text.length : null
+  })),
+  usage: aiData.usage
+});
+
 const rawText = (aiData.content || [])
   .map(block => block.text || '')
   .join('')
   .trim();
+
+if (!rawText) {
+  console.error("DECK SYNERGY: Anthropic returned no text", {
+    stop_reason: aiData.stop_reason,
+    content_blocks: aiData.content?.length || 0
+  });
+
+  return new Response(
+    JSON.stringify({
+      error: "The AI service returned no analysis text.",
+      stop_reason: aiData.stop_reason || null
+    }),
+    {
+      status: 502,
+      headers: { "Content-Type": "application/json" }
+    }
+  );
+}
 
 let parsed;
 
