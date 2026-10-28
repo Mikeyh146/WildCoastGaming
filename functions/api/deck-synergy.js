@@ -57,6 +57,7 @@ export async function onRequestPost({ request, env }) {
 
   const prompt = buildPrompt(commander, cards);
 
+  
   let aiRes;
   try {
     aiRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -72,7 +73,6 @@ export async function onRequestPost({ request, env }) {
         messages: [{ role: 'user', content: prompt }],
       }),
     });
-  } 
   } catch (e) {
     console.error('Anthropic fetch failed', {
       name: e?.name || 'UnknownError',
@@ -89,6 +89,7 @@ export async function onRequestPost({ request, env }) {
       }
     );
   }
+
 
 
 if (!aiRes.ok) {
