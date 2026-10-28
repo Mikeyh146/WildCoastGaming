@@ -236,12 +236,50 @@ function sourceCounts(lands, identityColors=[]){
  return out;
 }
 function scoreBand(n){return n>=85?'Excellent structure':n>=70?'Promising, with tuning opportunities':n>=55?'Functional but uneven':'Needs foundational tuning';}
-async function analyseDeck(){if(!selectedCommander){$('status').textContent='Select a commander first.';return;}const raw=$('decklist').value.trim();if(!raw){$('status').textContent='Paste a decklist first.';return;}const entries=parseDeck(raw);if(!entries.length){$('status').textContent='I could not find any card names in that list.';return;}const btn=$('analyse');btn.disabled=true;$('results').style.display='none';$('status').textContent=`Reading ${entries.length} decklist lines and checking card data with Scryfall…`;try{const cards=[];$('status').textContent=`Looking up ${entries.length} cards with Scryfall…`;const {found,notFound}=await fetchCollection(entries.map(e=>e.name));const strays=entries.filter(e=>!found.has(e.name.toLowerCase()));for(let i=0;i<strays.length;i++){const e=strays[i];$('status').textContent=`Double-checking card ${i+1} of ${strays.length}: ${e.name}`;try{const card=await fetchCard(e.name);found.set(e.name.toLowerCase(),card);}catch(err){/* leave unresolved, handled below */}if(i<strays.length-1)await new Promise(r=>setTimeout(r,550));}for(const e of entries){const card=found.get(e.name.toLowerCase());if(card)cards.push({...card,quantity:e.count,inputName:e.name});else cards.push({name:e.name,inputName:e.name,quantity:e.count,lookupError:true,type_line:'Unknown',cmc:0,color_identity:[],oracle_text:''});}const commanderOverride=selectedCommander.name;if(!cards.some(c=>c.name.toLowerCase()===selectedCommander.name.toLowerCase()))cards.unshift({...selectedCommander,quantity:1,inputName:selectedCommander.name,commanderOnly:true});
+async function analyseDeck(){
+  if (!currentUser) {
+    $('status').textContent =
+      'Please sign in or create a free account before analysing a deck.';
+
+    const accountPanel = $('account-panel');
+    accountPanel.classList.remove('hidden');
+    accountPanel.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+
+    accountMessage(
+      'auth-status',
+      'Sign in or create a free account to use the deck analyser.'
+    );
+    return;
+  }
+
+  if (!selectedCommander) {
+    $('status').textContent = 'Select a commander first.';
+    return;
+  }
 $('status').textContent='Checking in-depth synergy with your commander…';
 let synergy=null,synergyError=null;
 try{
   const synergyPayload={commander:{name:selectedCommander.name,type_line:selectedCommander.type_line,oracle_text:selectedCommander.oracle_text,color_identity:selectedCommander.color_identity},cards:cards.map(c=>({name:c.name,type_line:c.type_line,oracle_text:c.oracle_text,cmc:c.cmc,quantity:c.quantity}))};
-  const synRes=await fetch('/api/deck-synergy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(synergyPayload)});
+  const { data: { session } } =
+  await supabaseClient.auth.getSession();
+
+if (!session?.access_token) {
+  throw new Error(
+    'Your sign-in session has expired. Please sign in again.'
+  );
+}
+
+const synRes = await fetch('/api/deck-synergy', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`
+  },
+  body: JSON.stringify(synergyPayload)
+});
   const synData=await synRes.json();
   if(!synRes.ok)throw new Error(synData.error||`AI service error (${synRes.status})`);
   synergy=synData;
