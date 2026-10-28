@@ -236,7 +236,11 @@ function sourceCounts(lands, identityColors=[]){
  return out;
 }
 function scoreBand(n){return n>=85?'Excellent structure':n>=70?'Promising, with tuning opportunities':n>=55?'Functional but uneven':'Needs foundational tuning';}
+
+
 async function analyseDeck(){
+  const btn = $('analyse');
+
   if (!currentUser) {
     $('status').textContent =
       'Please sign in or create a free account before analysing a deck.';
@@ -259,32 +263,158 @@ async function analyseDeck(){
     $('status').textContent = 'Select a commander first.';
     return;
   }
-$('status').textContent='Checking in-depth synergy with your commander…';
-let synergy=null,synergyError=null;
-try{
-  const synergyPayload={commander:{name:selectedCommander.name,type_line:selectedCommander.type_line,oracle_text:selectedCommander.oracle_text,color_identity:selectedCommander.color_identity},cards:cards.map(c=>({name:c.name,type_line:c.type_line,oracle_text:c.oracle_text,cmc:c.cmc,quantity:c.quantity}))};
-  const { data: { session } } =
-  await supabaseClient.auth.getSession();
 
-if (!session?.access_token) {
-  throw new Error(
-    'Your sign-in session has expired. Please sign in again.'
+  const deckText = $('decklist').value.trim();
+
+  if (!deckText) {
+    $('status').textContent =
+      'Paste your decklist before starting the review.';
+    $('decklist').focus();
+    return;
+  }
+
+  const entries = parseDeck(deckText).filter(entry =>
+    entry.name.toLowerCase() !== selectedCommander.name.toLowerCase()
   );
+
+  if (!entries.length) {
+    $('status').textContent =
+      'No deck cards were found. Paste your decklist below the selected commander.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Analysing deck…';
+  $('status').textContent = 'Looking up your cards on Scryfall…';
+
+  try {
+    const uniqueNames = [...new Set(entries.map(entry => entry.name))];
+    const { found } = await fetchCollection(uniqueNames);
+    const deckCards = [];
+
+    for (const entry of entries) {
+      let card = found.get(entry.name.toLowerCase());
+
+      if (!card) {
+        try {
+          card = await fetchCard(entry.name);
+        } catch (lookupError) {
+          card = null;
+        }
+      }
+
+      if (card) {
+        deckCards.push({
+          ...card,
+          quantity: entry.count,
+          inputName: entry.name,
+          lookupError: false
+        });
+      } else {
+        deckCards.push({
+          name: entry.name,
+          quantity: entry.count,
+          inputName: entry.name,
+          lookupError: true,
+          type_line: '',
+          oracle_text: '',
+          color_identity: [],
+          cmc: 0
+        });
+      }
+    }
+
+    const commanderOverride = selectedCommander.name;
+    const cards = [
+      {
+        ...selectedCommander,
+        quantity: 1,
+        inputName: selectedCommander.name,
+        lookupError: false
+      },
+      ...deckCards
+    ];
+
+    $('status').textContent =
+      'Checking in-depth synergy with your commander…';
+
+    let synergy = null;
+    let synergyError = null;
+
+    try {
+      const { data: { session } } =
+        await supabaseClient.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error(
+          'Your sign-in session has expired. Please sign in again.'
+        );
+      }
+
+      const synergyPayload = {
+        commander: {
+          name: selectedCommander.name,
+          type_line: selectedCommander.type_line,
+          oracle_text: selectedCommander.oracle_text,
+          color_identity: selectedCommander.color_identity
+        },
+        cards: deckCards
+          .filter(card => !card.lookupError)
+          .map(card => ({
+            name: card.name,
+            type_line: card.type_line,
+            oracle_text: card.oracle_text,
+            cmc: card.cmc,
+            quantity: card.quantity
+          }))
+      };
+
+      const synRes = await fetch('/api/deck-synergy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(synergyPayload)
+      });
+
+      const synData = await synRes.json();
+
+      if (!synRes.ok) {
+        throw new Error(
+          synData.error || `AI service error (${synRes.status})`
+        );
+      }
+
+      synergy = synData;
+    } catch (e) {
+      synergyError = e.message || 'request failed';
+    }
+
+    await renderReport(
+      cards,
+      entries,
+      commanderOverride,
+      synergy,
+      synergyError
+    );
+
+    $('status').textContent =
+      'Review ready. Card text and classifications come from Scryfall; strategic judgements are heuristic, and the synergy notes are AI-generated.';
+
+  } catch (e) {
+    $('status').textContent =
+      'The review could not finish. Check your connection and try again.';
+    console.error(e);
+  } finally {
+    btn.disabled = !selectedCommander;
+    btn.textContent = selectedCommander
+      ? 'Analyse my deck'
+      : 'Select a commander first';
+  }
 }
 
-const synRes = await fetch('/api/deck-synergy', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session.access_token}`
-  },
-  body: JSON.stringify(synergyPayload)
-});
-  const synData=await synRes.json();
-  if(!synRes.ok)throw new Error(synData.error||`AI service error (${synRes.status})`);
-  synergy=synData;
-}catch(e){synergyError=e.message||'request failed';}
-await renderReport(cards,entries,commanderOverride,synergy,synergyError);$('status').textContent='Review ready. Card text and classifications come from Scryfall; strategic judgements are heuristic, and the synergy notes are AI-generated.';}catch(e){$('status').textContent='The review could not finish. Check your connection and try again.';console.error(e);}finally{btn.disabled=false;}}
+  
 function synergyHtml(synergy,synergyError){
   if(synergyError){return `<div class="notice warning">Smart synergy analysis didn't come through (${synergyError}). The stats and heuristic checks below are still accurate.</div>`;}
   if(!synergy)return '';
