@@ -73,10 +73,16 @@ try {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-5-5',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+  model: 'claude-haiku-5-5',
+  max_tokens: 8000,
+  thinking: {
+    type: 'disabled'
+  },
+  output_config: {
+    effort: 'medium'
+  },
+  messages: [{ role: 'user', content: prompt }],
+}),
   });
 
   console.log("DECK SYNERGY: Anthropic responded", {
