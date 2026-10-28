@@ -45,10 +45,20 @@ footer{background:var(--ink);color:var(--mist);padding:30px 24px 24px;text-align
 @media(max-width:700px){.visual-grid{grid-template-columns:1fr}.recommendation-grid{grid-template-columns:1fr}.strategy-columns{grid-template-columns:1fr}.type-donut-wrap{justify-content:space-around;gap:12px}.type-donut{width:120px;height:120px}nav{padding:13px 16px}.nav-links{gap:10px}.nav-links a{font-size:.55rem}.wordmark{font-size:.76rem}.wrap{padding:0 14px}.panel{padding:20px 16px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.commander-banner{align-items:flex-start;padding:15px}.commander-banner img{width:70px;min-height:75px}.bar-row{grid-template-columns:92px 1fr 22px}}
 
 .fit-meter{margin-top:9px}.fit-meter-head{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--slate);margin-bottom:5px}.fit-meter-head b{font:700 .72rem Orbitron,sans-serif;color:var(--teal)}.fit-track{height:6px;border-radius:99px;background:rgba(16,38,61,.1);overflow:hidden}.fit-track span{display:block;height:100%;background:linear-gradient(90deg,var(--orange),var(--teal));border-radius:99px}.fit-meter small{display:block;font-size:.65rem;color:var(--slate);line-height:1.45;margin-top:5px}.swap-row{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:10px;align-items:stretch;padding:12px 0;border-bottom:1px solid var(--line)}.swap-side{padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:6px;min-width:0}.swap-side.add{background:rgba(51,167,183,.09);border:1px solid rgba(51,167,183,.22)}.swap-side.cut{background:rgba(255,140,66,.08);border:1px solid rgba(255,140,66,.2)}.swap-label{font:700 .58rem Orbitron,sans-serif;letter-spacing:.08em;color:var(--teal)}.swap-side.cut .swap-label{color:#9b4b0b}.swap-side strong{font-size:.82rem;overflow-wrap:anywhere}.swap-side small{font-size:.7rem;line-height:1.5;color:var(--slate)}.fit-badge{font-size:.68rem;font-weight:800;color:#187987}.swap-arrow{display:grid;place-items:center;font-size:1.2rem;color:var(--teal)}@media(max-width:600px){.swap-row{grid-template-columns:1fr}.swap-arrow{transform:rotate(90deg)}}
+
+/* Account and deck library */
+.account-strip{max-width:1000px;margin:20px auto 0;padding:0 24px;display:flex;justify-content:flex-end;gap:10px;align-items:center}.account-pill{border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:999px;padding:9px 14px;font:700 .68rem 'Orbitron',sans-serif;cursor:pointer;color:var(--ink)}.account-panel{max-width:1000px;margin:14px auto 0;padding:0 24px}.account-card{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 10px 30px -18px rgba(16,38,61,.2)}.account-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:22px}.account-card h2{font:700 .9rem 'Orbitron',sans-serif;margin-bottom:10px}.account-card p{font-size:.8rem;line-height:1.6;color:var(--slate)}.account-card .field{margin-top:14px;margin-bottom:12px}.account-card .field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font:400 .85rem 'Manrope',sans-serif}.account-tabs{display:flex;gap:8px;margin:14px 0}.account-tabs button{flex:1;padding:9px;border:1px solid var(--line);border-radius:8px;background:transparent;cursor:pointer;font-weight:700;color:var(--slate)}.account-tabs button.active{background:var(--ink);color:white}.account-list{display:grid;gap:9px;margin-top:12px}.saved-deck{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.7)}.saved-deck strong{display:block;font-size:.8rem}.saved-deck small{display:block;margin-top:4px;color:var(--slate);font-size:.7rem}.saved-deck-actions{display:flex;gap:6px;flex-wrap:wrap}.saved-deck-actions button{border:1px solid var(--line);background:white;border-radius:7px;padding:7px 9px;font-size:.68rem;font-weight:700;cursor:pointer}.account-status{min-height:18px;margin-top:10px;font-size:.77rem;color:var(--slate);line-height:1.5}.profile-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.8rem}.profile-row:last-child{border-bottom:0}@media(max-width:720px){.account-grid{grid-template-columns:1fr}.account-strip{justify-content:center}.saved-deck{align-items:flex-start;flex-direction:column}.account-panel{padding:0 14px}.account-strip{padding:0 14px}}
+
 </style>
 </head>
 <body>
 <nav><div class="wordmark">WILD COAST <span>GAMING</span></div><ul class="nav-links"><li><a href="index.html">Home</a></li><li><a href="#import">Review Deck</a></li><li><a href="#how">How it works</a></li></ul></nav>
+<div class="account-strip"><button class="account-pill" id="account-toggle" type="button">Sign in / My account</button><span id="account-nav-status" class="hint" style="margin:0"></span></div>
+<section class="account-panel hidden" id="account-panel" aria-label="Account and deck manager"><div class="account-card"><div class="account-grid">
+<div id="auth-column"><h2>Wild Coast account</h2><p>Sign in to save your Commander decklists and manage your profile. Your account foundation can later connect to the Wild Coast shop.</p><div class="account-tabs"><button type="button" id="auth-login-tab" class="active">Sign in</button><button type="button" id="auth-register-tab">Create account</button></div>
+<form id="auth-form"><div class="field hidden" id="auth-name-wrap"><label for="auth-name">Display name</label><input id="auth-name" type="text" autocomplete="name" placeholder="Your name"></div><div class="field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="field"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></div><button class="btn btn-primary" id="auth-submit" type="submit">Sign in</button></form><div class="account-status" id="auth-status" role="status" aria-live="polite"></div><button class="account-pill hidden" id="sign-out" type="button">Sign out</button>
+</div><div id="profile-column"><h2>My profile &amp; decks</h2><div id="profile-summary"><p>Sign in to see your profile and saved decks here.</p></div><div class="actions" style="margin-top:12px"><button class="btn btn-secondary hidden" id="save-deck" type="button">Save current deck</button><button class="btn btn-secondary hidden" id="refresh-decks" type="button">Refresh library</button></div><div class="account-status" id="deck-status" role="status" aria-live="polite"></div><div id="saved-decks" class="account-list"></div><div class="notice" style="margin-top:14px"><strong>Shop connection planned:</strong> purchase history and orders will appear here once we connect your shop platform securely. No order data is shown until that integration exists.</div></div>
+</div></div></section>
 <header class="page-head"><div class="eyebrow">Magic: The Gathering</div><h1>Commander Deck Reviewer</h1><p>See what your deck does well, find the gaps, and get practical upgrade ideas. Built for strategy, not just a pile of card counts.</p></header>
 <main class="wrap">
 <section class="panel" id="import"><h2>Bring your deck to the table</h2><p class="sub">Select your commander, paste your decklist, and get a deep card-by-card review — including how each card actually plays with your commander, not just a generic category.</p>
@@ -61,6 +71,7 @@ footer{background:var(--ink);color:var(--mist);padding:30px 24px 24px;text-align
 <section class="results" id="results" aria-live="polite"></section>
 </main>
 <footer>&copy; 2026 Wild Coast Gaming &bull; Pembrokeshire, Wales &bull; Card data from Scryfall</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const API='https://api.scryfall.com';
 const $=id=>document.getElementById(id);
@@ -282,6 +293,84 @@ html+=`<section class="report-section"><h3>Suggested additions to investigate</h
 const missing=unknown.map(c=>c.inputName);html+=`<section class="report-section"><h3>Card lookup and decklist</h3><p>Matched ${cards.length-unknown.length} of ${cards.length} unique input lines against Scryfall.</p>${missing.length?`<div class="notice warning">Could not match: ${missing.map(escapeHtml).join(', ')}</div>`:''}<details style="margin-top:12px"><summary style="cursor:pointer;font-size:.8rem;font-weight:700">Show parsed decklist</summary><pre class="decklist-preview">${escapeHtml(cards.map(c=>`${c.quantity} ${c.name}${c.lookupError?' [NOT FOUND]':''}`).join('\n'))}</pre></details><p class="smallprint">This is a heuristic review, not a simulator. The overall score is a weighted checklist, the 1–10 power estimate is not an official Commander bracket, and the opening-hand odds assume a random seven-card hand before mulligans. It does not fully understand combo lines, play sequencing, budget, local metagame or all mana abilities. Potential cuts are prompts for human review, not automatic instructions. Verify legality and final card choices in a dedicated Commander checker.</p><div class="actions" style="margin-top:14px"><button class="btn btn-secondary" id="copy-report" type="button">Copy parsed decklist</button><button class="btn btn-secondary" id="new-review" type="button">Review another deck</button></div></section>`;
 $('results').innerHTML=html;$('results').style.display='block';$('copy-report').addEventListener('click',async()=>{const txt=cards.map(c=>`${c.quantity} ${c.name}`).join('\n');try{await navigator.clipboard.writeText(txt);$('copy-report').textContent='Copied!';}catch{$('status').textContent='Clipboard unavailable. Select the parsed decklist above and copy it manually.';}});$('new-review').addEventListener('click',()=>{$('results').style.display='none';$('decklist').focus();window.scrollTo({top:0,behavior:'smooth'});});$('results').scrollIntoView({behavior:'smooth',block:'start'});}
 $('analyse').addEventListener('click',analyseDeck);
+
+
+// Supabase email/password account and personal deck library.
+// The publishable key is designed for browser use; RLS remains essential.
+const SUPABASE_URL='https://fdtpeojeykmhdawfkbug.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_FAVsFAXNmFJWpsf917tetQ_rcPn9qvw';
+let supabaseClient=null, currentUser=null, authMode='login';
+try {
+  if(window.supabase?.createClient) supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+} catch(e) { console.error('Supabase client could not initialise',e); }
+const accountPanel=$('account-panel');
+$('account-toggle').addEventListener('click',()=>{accountPanel.classList.toggle('hidden');if(!accountPanel.classList.contains('hidden'))accountPanel.scrollIntoView({behavior:'smooth',block:'start'});});
+function setAuthMode(mode){authMode=mode;const registering=mode==='register';$('auth-login-tab').classList.toggle('active',!registering);$('auth-register-tab').classList.toggle('active',registering);$('auth-name-wrap').classList.toggle('hidden',!registering);$('auth-submit').textContent=registering?'Create account':'Sign in';$('auth-password').autocomplete=registering?'new-password':'current-password';$('auth-status').textContent='';}
+$('auth-login-tab').addEventListener('click',()=>setAuthMode('login'));
+$('auth-register-tab').addEventListener('click',()=>setAuthMode('register'));
+function accountMessage(id,msg,isError=false){const el=$(id);if(el){el.textContent=msg;el.style.color=isError?'var(--red)':'var(--slate)';}}
+function safeDate(value){try{return new Date(value).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});}catch{return '';}}
+async function refreshAccount(){
+  if(!supabaseClient){$('account-nav-status').textContent='Account service unavailable';accountMessage('auth-status','Could not load the account service. Refresh the page and try again.',true);return;}
+  const {data:{session},error}=await supabaseClient.auth.getSession();
+  if(error)console.warn('Could not retrieve Supabase session',error);
+  currentUser=session?.user||null;
+  const signedIn=!!currentUser;
+  $('account-toggle').textContent=signedIn?'My account':'Sign in / My account';
+  $('account-nav-status').textContent=signedIn?(currentUser.email||'Signed in'):'';
+  $('auth-form').classList.toggle('hidden',signedIn);
+  $('auth-login-tab').classList.toggle('hidden',signedIn);$('auth-register-tab').classList.toggle('hidden',signedIn);
+  $('sign-out').classList.toggle('hidden',!signedIn);$('save-deck').classList.toggle('hidden',!signedIn);$('refresh-decks').classList.toggle('hidden',!signedIn);
+  if(!signedIn){$('profile-summary').innerHTML='<p>Sign in to see your profile and saved decks here.</p>';$('saved-decks').innerHTML='';return;}
+  const [{data:profile,error:profileError},{data:usage,error:usageError}]=await Promise.all([
+    supabaseClient.from('profiles').select('display_name,plan,created_at').eq('id',currentUser.id).maybeSingle(),
+    supabaseClient.from('analysis_usage').select('completed_count,reserved_count').eq('user_id',currentUser.id).maybeSingle()
+  ]);
+  const displayName=profile?.display_name||currentUser.user_metadata?.full_name||currentUser.email;
+  $('profile-summary').innerHTML=`<div class="profile-row"><span>Name</span><strong>${escapeHtml(displayName||'')}</strong></div><div class="profile-row"><span>Email</span><strong>${escapeHtml(currentUser.email||'')}</strong></div><div class="profile-row"><span>Account type</span><strong>${escapeHtml(profile?.plan||'free')}</strong></div><div class="profile-row"><span>AI analyses used</span><strong>${Number(usage?.completed_count||0)} of 1</strong></div><p class="hint">Profile created ${safeDate(profile?.created_at||currentUser.created_at)}. Analysis limits are not enforced by the reviewer API yet; that is a separate server-side step.</p>`;
+  if(profileError)accountMessage('deck-status','Account connected, but profile details could not be loaded. Check that the database setup SQL has been run.',true);
+  else if(usageError)accountMessage('deck-status','Profile loaded. Usage details are unavailable until the database setup is complete.',true);
+  await loadSavedDecks();
+}
+async function loadSavedDecks(){
+  if(!currentUser||!supabaseClient)return;
+  $('saved-decks').innerHTML='<p>Loading your deck library…</p>';
+  const {data,error}=await supabaseClient.from('decks').select('id,name,commander_name,decklist_text,deck_hash,created_at,updated_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
+  if(error){$('saved-decks').innerHTML='';accountMessage('deck-status','Could not load saved decks. Make sure you have run the Supabase schema SQL and that Row Level Security policies are in place.',true);console.warn(error);return;}
+  accountMessage('deck-status',data.length?`${data.length} saved deck${data.length===1?'':'s'} in your library.`:'No saved decks yet. Select a commander, paste a list, then choose Save current deck.');
+  $('saved-decks').innerHTML=data.length?data.map(d=>`<div class="saved-deck"><div><strong>${escapeHtml(d.name||d.commander_name||'Untitled deck')}</strong><small>${escapeHtml(d.commander_name||'Commander not set')} · updated ${safeDate(d.updated_at||d.created_at)}</small></div><div class="saved-deck-actions"><button type="button" data-load-deck="${escapeHtml(d.id)}">Load</button><button type="button" data-delete-deck="${escapeHtml(d.id)}">Delete</button></div></div>`).join(''):'<p>Your saved deck library is empty for now.</p>';
+  $('saved-decks').querySelectorAll('[data-load-deck]').forEach(btn=>btn.addEventListener('click',()=>loadDeckIntoEditor(data.find(d=>d.id===btn.dataset.loadDeck))));
+  $('saved-decks').querySelectorAll('[data-delete-deck]').forEach(btn=>btn.addEventListener('click',()=>deleteSavedDeck(btn.dataset.deleteDeck)));
+}
+async function hashDeck(commanderName,decklist){const normal=`${(commanderName||'').trim().toLowerCase()}\n${decklist.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).sort((a,b)=>a.localeCompare(b)).join('\n')}`;const bytes=new TextEncoder().encode(normal);const digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+$('save-deck').addEventListener('click',async()=>{
+  if(!currentUser){accountMessage('deck-status','Please sign in first.',true);return;}
+  const commanderName=selectedCommander?.name||$('commander-input').value.trim();const decklist=$('decklist').value.trim();
+  if(!commanderName||!decklist){accountMessage('deck-status','Select your commander and paste a decklist before saving.',true);return;}
+  const defaultName=`${commanderName} deck`;
+  const name=prompt('Name this deck:',defaultName);if(name===null)return;
+  $('save-deck').disabled=true;accountMessage('deck-status','Saving your deck…');
+  try{const deck_hash=await hashDeck(commanderName,decklist);const {error}=await supabaseClient.from('decks').insert({user_id:currentUser.id,name:name.trim()||defaultName,commander_name:commanderName,commander_scryfall_id:selectedCommander?.id||null,decklist_text:decklist,deck_hash});if(error)throw error;accountMessage('deck-status','Deck saved to your account.');await loadSavedDecks();}
+  catch(e){console.error(e);accountMessage('deck-status',e.message||'Could not save this deck. Check the database setup and try again.',true);}
+  finally{$('save-deck').disabled=false;}
+});
+async function loadDeckIntoEditor(deck){if(!deck)return;$('commander-input').value=deck.commander_name;$('decklist').value=deck.decklist_text;selectedCommander=null;$('analyse').disabled=true;$('analyse').textContent='Finding saved commander…';accountMessage('deck-status',`Loading ${deck.name||deck.commander_name}…`);try{const card=await fetchCard(deck.commander_name);selectedCommander=card;$('commander-input').value=card.name;$('analyse').disabled=false;$('analyse').textContent='Analyse deck';$('commander-hint').textContent=`Selected: ${card.name}`;accountMessage('deck-status',`Loaded ${deck.name||deck.commander_name}. Analyse it when ready.`);$('import').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){$('analyse').disabled=false;$('analyse').textContent='Analyse deck';accountMessage('deck-status','Decklist loaded, but the commander lookup failed. Select the commander again from the suggestions before analysing.',true);$('import').scrollIntoView({behavior:'smooth',block:'start'});}}
+async function deleteSavedDeck(id){if(!currentUser||!confirm('Delete this saved deck? This cannot be undone.'))return;const {error}=await supabaseClient.from('decks').delete().eq('id',id).eq('user_id',currentUser.id);if(error){accountMessage('deck-status',error.message||'Could not delete this deck.',true);return;}accountMessage('deck-status','Deck deleted.');await loadSavedDecks();}
+$('refresh-decks').addEventListener('click',loadSavedDecks);
+$('sign-out').addEventListener('click',async()=>{const {error}=await supabaseClient.auth.signOut();if(error){accountMessage('auth-status',error.message,true);return;}accountMessage('auth-status','You have signed out.');await refreshAccount();});
+$('auth-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(!supabaseClient){accountMessage('auth-status','Account service could not initialise. Check the Supabase project URL and publishable key.',true);return;}
+  const email=$('auth-email').value.trim();const password=$('auth-password').value;const name=$('auth-name').value.trim();const submit=$('auth-submit');submit.disabled=true;accountMessage('auth-status',authMode==='register'?'Creating your account…':'Signing you in…');
+  try{
+    if(authMode==='register'){
+      const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:window.location.origin+window.location.pathname}});if(error)throw error;
+      if(data.session){accountMessage('auth-status','Account created. You are signed in.');await refreshAccount();}
+      else accountMessage('auth-status','Registration started. Check your email for the confirmation link, then return here to sign in.');
+    } else {const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;accountMessage('auth-status','Signed in successfully.');await refreshAccount();}
+  }catch(e){accountMessage('auth-status',e.message||'Authentication failed. Please try again.',true);}finally{submit.disabled=false;}
+});
+if(supabaseClient){supabaseClient.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;refreshAccount().catch(console.error);});refreshAccount().catch(console.error);}else{accountMessage('auth-status','Could not initialise Supabase. Check the project settings.',true);}
+
 </script>
 </body>
 </html>
