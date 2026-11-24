@@ -177,14 +177,24 @@
     .product-grid{ grid-template-columns:repeat(2, 1fr); gap:12px; }
     .modal-box{ width:100%; height:100%; max-height:none; border-radius:0; }
   }
+  .logo-link{ display:block; line-height:0; }
+  .logo-img{ height:42px; width:auto; display:block; mix-blend-mode:multiply; }
+  .footer-logo{ display:inline-block; background:#fff; padding:8px 12px; border-radius:10px; line-height:0; }
+  .footer-logo img{ height:44px; width:auto; display:block; }
+  @media (max-width:640px){ .logo-img{ height:34px; } }
 </style>
+<link rel="icon" href="/images/Wlogo.jpg">
+<meta property="og:title" content="Wild Coast Gaming">
+<meta property="og:description" content="Tabletop, trading cards and miniatures in Pembrokeshire. Book a table or shop online.">
+<meta property="og:image" content="https://wildcoastgaming.co.uk/images/Wlogo.jpg">
+<meta property="og:type" content="website">
 </head>
 <body>
 
 <div class="mock-banner" id="demo-banner" style="display:none">Demo mode — sample products shown until the Shopify connection is switched on.</div>
 
 <nav>
-  <div class="wordmark">WILD COAST <span>GAMING</span></div>
+  <a class="logo-link" href="/"><img class="logo-img" src="/images/Wlogo.jpg" alt="Wild Coast Gaming" onerror="this.replaceWith(document.createTextNode('WILD COAST GAMING'))"></a>
   <ul class="nav-links">
     <li><a href="#book" id="open-book">Book a Table</a></li>
     <li><a href="https://wildcoastgaming-store.myshopify.com/account" id="login-link">Login</a></li>
@@ -237,7 +247,7 @@
 <footer>
   <div class="footer-inner">
     <div class="footer-col">
-      <div class="footer-brand">WILD COAST <span>GAMING</span></div>
+      <div class="footer-brand"><span class="footer-logo"><img src="/images/Wlogo.jpg" alt="Wild Coast Gaming" onerror="this.parentNode.replaceWith(document.createTextNode('WILD COAST GAMING'))"></span></div>
       <p>A hobby hub for trading card games, tabletop adventures and miniatures, right on Pembrokeshire's Wild Coast.</p>
     </div>
     <div class="footer-col">
@@ -299,7 +309,7 @@ const ICONS = {
 
 /* ---------------- Shopify connection ---------------- */
 const SHOPIFY_DOMAIN = 'wildcoastgaming-store.myshopify.com';
-const SHOPIFY_TOKEN  = '13bcb5408df60214e3f560bc1b7525c5';          // paste your PUBLIC Storefront API token here
+const SHOPIFY_TOKEN  = '';          // paste your PUBLIC Storefront API token here
 const SHOPIFY_API_VERSION = '2026-04'; // Shopify retires versions yearly, so bump this occasionally
 const LIVE = !!SHOPIFY_TOKEN;
 
