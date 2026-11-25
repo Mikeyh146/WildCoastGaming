@@ -317,43 +317,48 @@ const LIVE = !!SHOPIFY_TOKEN;
 const CATALOG = {
   'games-workshop': { name:'Games Workshop', category:'tabletop', children:{
     'aos': { name:'Age of Sigmar', children:{
-      'models':  { name:'Models',  collection:'gw-aos-models' },
-      'paint':   { name:'Paint',   children:{ 'studio-paints': { name:'Studio Paints', collection:'gw-aos-studio-paints' } }},
-      'storage': { name:'Storage', collection:'gw-aos-storage' },
+      'models':  { name:'Models',  collection:'492773048423' },
+      'paint':   { name:'Paint',   children:{ 'studio-paints': { name:'Studio Paints', collection:'492773081191' } }},
+      'storage': { name:'Storage', collection:'492773179495' },
     }},
     '40k': { name:'Warhammer 40,000', children:{
       'models': { name:'Models', children:{
-        'orks':          { name:'Orks',                 collection:'gw-40k-orks' },
-        'space-marines': { name:'Space Marines Faction', collection:'gw-40k-space-marines' },
+        'orks':          { name:'Orks',                  collection:'492773212263' },
+        'space-marines': { name:'Space Marines Faction', collection:'492773113959' },
       }},
-      'paint':   { name:'Paint',   children:{ 'studio-paints': { name:'Studio Paints', collection:'gw-40k-studio-paints' } }},
-      'storage': { name:'Storage', collection:'gw-40k-storage' },
+      'paint':       { name:'Paint',       children:{ 'studio-paints': { name:'Studio Paints', collection:'492773146727' } }},
+      'storage':     { name:'Storage',     collection:'492773277799' },
+      'battle-mats': { name:'Battle Mats', collection:'493720764519' },
     }},
   }},
   'magic': { name:'Magic: The Gathering', category:'tcg', children:{
-    'commander-decks': { name:'Commander Decks', collection:'magic-commander-decks' },
-    'booster-packs':   { name:'Booster Packs',   collection:'magic-booster-packs' },
-    'booster-boxes':   { name:'Booster Boxes',   collection:'magic-booster-boxes' },
+    'commander-decks': { name:'Commander Decks', collection:'492773245031' },
+    'booster-packs':   { name:'Booster Packs',   collection:'492773310567' },
+    'booster-boxes':   { name:'Booster Boxes',   collection:'492773343335' },
     'accessories': { name:'Accessories', children:{
-      'sleeves': { name:'Sleeves',    collection:'magic-sleeves' },
-      'boxes':   { name:'Deck Boxes', collection:'magic-deck-boxes' },
+      'sleeves': { name:'Sleeves',    collection:'492773408871' },
+      'boxes':   { name:'Deck Boxes', collection:'492773441639' },
     }},
   }},
   'pokemon': { name:'Pokémon', category:'tcg', children:{
-    'booster-packs':     { name:'Booster Packs',      collection:'pokemon-booster-packs' },
-    'elite-trainer-box': { name:'Elite Trainer Boxes', collection:'pokemon-elite-trainer-boxes' },
-    'accessories': { name:'Accessories', children:{ 'sleeves': { name:'Sleeves', collection:'pokemon-sleeves' } }},
+    'booster-packs':     { name:'Booster Packs',       collection:'492773376103' },
+    'elite-trainer-box': { name:'Elite Trainer Boxes', collection:'492773474407' },
+    'accessories': { name:'Accessories', children:{ 'sleeves': { name:'Sleeves', collection:'492773539943' } }},
   }},
   'dnd': { name:'Dungeons & Dragons', category:'rpg', children:{
-    'core-rules':       { name:'Core Rulebooks',      collection:'dnd-core-rulebooks' },
-    'dice-accessories': { name:'Dice & Accessories',  collection:'dnd-dice-accessories' },
+    'core-rules':       { name:'Core Rulebooks',     collection:'492773572711' },
+    'dice-accessories': { name:'Dice & Accessories', collection:'492773671015' },
   }},
   'paint-tools': { name:'Paint & Tools', category:'paint', children:{
-    'brushes':  { name:'Brushes',  collection:'paint-brushes' },
-    'palettes': { name:'Palettes', collection:'paint-palettes' },
-    'primer':   { name:'Primer',   collection:'paint-primer' },
+    'paints':   { name:'Paints',   collection:['493720862823', '493720895591'] },  // AP Speed Paints + AK Paints
+    'brushes':  { name:'Brushes',  collection:'492773507175' },
+    'palettes': { name:'Palettes', collection:['492773638247', '493720993895'] },  // Paint Palettes + AP Wet Pallet
+    'basing':   { name:'Basing',   collection:['493720928359', '493721124967'] },  // AP Basing + Model Basing
+    'primer':   { name:'Primer',   collection:'492773605479' },
   }},
 };
+// A collection can be a Shopify collection ID (the number at the end of its admin web address)
+// or a handle. Use a list [ 'id1', 'id2' ] to combine several collections on one card.
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
