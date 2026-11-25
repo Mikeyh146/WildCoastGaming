@@ -165,6 +165,40 @@
   .modal-box iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--bg); }
   .modal-load{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.85rem; color:var(--slate); }
   .modal-close{ position:absolute; top:10px; right:10px; z-index:5; width:38px; height:38px; border-radius:50%; border:1px solid rgba(16,38,61,0.2); background:rgba(245,244,240,0.95); color:var(--ink); font-size:1.2rem; cursor:pointer; }
+
+  /* ---------- shopping basket drawer ---------- */
+  .cart-btn{ position:fixed; right:18px; bottom:18px; z-index:80; display:none; padding:13px 20px; border:none; border-radius:999px; cursor:pointer; background:var(--orange); color:#1a0e05; font-family:'Orbitron',sans-serif; font-size:0.72rem; letter-spacing:0.05em; text-transform:uppercase; box-shadow:0 0 24px -4px rgba(255,140,66,0.6); }
+  .add-btn:disabled{ opacity:0.5; cursor:default; }
+  .cart-overlay{ position:fixed; inset:0; z-index:300; background:rgba(7,18,29,.62); opacity:0; visibility:hidden; transition:opacity .25s ease,visibility .25s ease; }
+  .cart-overlay.open{ opacity:1; visibility:visible; }
+  .cart-drawer{ position:absolute; top:0; right:0; width:min(470px,100%); height:100%; background:var(--bg); display:flex; flex-direction:column; transform:translateX(100%); transition:transform .28s ease; box-shadow:-20px 0 60px rgba(0,0,0,.25); }
+  .cart-overlay.open .cart-drawer{ transform:translateX(0); }
+  .cart-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:22px 22px 18px; color:var(--bg); background:var(--ink); }
+  .cart-head h2{ font-family:'Orbitron',sans-serif; font-size:1rem; }
+  .cart-head p{ margin-top:5px; color:var(--mist); font-size:.75rem; }
+  .cart-close{ width:38px; height:38px; border:1px solid rgba(255,255,255,.25); border-radius:50%; background:transparent; color:white; font-size:1.4rem; cursor:pointer; }
+  .cart-lines{ flex:1; overflow:auto; padding:8px 22px; }
+  .cart-empty{ padding:42px 8px; text-align:center; color:var(--slate); line-height:1.7; }
+  .cart-line{ display:grid; grid-template-columns:76px minmax(0,1fr); gap:14px; padding:17px 0; border-bottom:1px solid rgba(16,38,61,.12); }
+  .cart-line-image{ width:76px; height:76px; border-radius:10px; overflow:hidden; background:rgba(51,167,183,.12); display:flex; align-items:center; justify-content:center; color:var(--slate); }
+  .cart-line-image img{ width:100%; height:100%; object-fit:cover; }
+  .cart-line-name{ font-size:.84rem; font-weight:700; line-height:1.35; }
+  .cart-line-variant{ margin-top:3px; color:var(--slate); font-size:.72rem; }
+  .cart-line-price{ margin-top:7px; font-family:'Orbitron',sans-serif; font-size:.78rem; }
+  .cart-line-actions{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .qty-control{ display:inline-flex; align-items:center; border:1px solid rgba(16,38,61,.2); border-radius:999px; overflow:hidden; }
+  .qty-control button{ width:29px; height:28px; border:0; background:white; color:var(--ink); cursor:pointer; font-size:1rem; }
+  .qty-control span{ min-width:27px; text-align:center; font-size:.75rem; font-weight:700; }
+  .cart-remove{ border:0; background:none; color:#a33b32; font-size:.72rem; text-decoration:underline; cursor:pointer; }
+  .cart-footer{ padding:18px 22px 22px; background:white; border-top:1px solid rgba(16,38,61,.1); }
+  .cart-subtotal{ display:flex; justify-content:space-between; align-items:center; font-weight:700; }
+  .cart-subtotal strong{ font-family:'Orbitron',sans-serif; font-size:1.05rem; }
+  .cart-note{ margin:8px 0 15px; color:var(--slate); font-size:.7rem; line-height:1.5; }
+  .cart-checkout{ width:100%; padding:15px; border:0; border-radius:999px; background:var(--orange); color:#1a0e05; font-family:'Orbitron',sans-serif; font-size:.72rem; letter-spacing:.05em; cursor:pointer; }
+  .cart-checkout:disabled{ opacity:.45; cursor:not-allowed; }
+  .cart-status{ min-height:18px; margin-top:9px; color:var(--slate); font-size:.72rem; text-align:center; }
+  .cart-busy{ opacity:.6; pointer-events:none; }
+
   @media (max-width:640px){
     nav{ padding:12px 14px; }
     .wordmark{ font-size:0.78rem; }
@@ -176,6 +210,7 @@
     .products-section{ padding:30px 14px 60px; }
     .product-grid{ grid-template-columns:repeat(2, 1fr); gap:12px; }
     .modal-box{ width:100%; height:100%; max-height:none; border-radius:0; }
+    .cart-drawer{ width:100%; }
   }
   .logo-link{ display:block; line-height:0; }
   .logo-img{ height:42px; width:auto; display:block; mix-blend-mode:multiply; }
@@ -283,7 +318,24 @@
   </div>
 </div>
 
-<button class="cart-btn" id="cart-btn" type="button">Checkout</button>
+
+<div class="cart-overlay" id="cart-overlay" aria-hidden="true">
+  <aside class="cart-drawer" role="dialog" aria-modal="true" aria-label="Your shopping basket">
+    <div class="cart-head">
+      <div><h2>Your Basket <span id="cart-heading-count">(0)</span></h2><p>Ready for your next adventure?</p></div>
+      <button class="cart-close" id="cart-close" type="button" aria-label="Close basket">&times;</button>
+    </div>
+    <div class="cart-lines" id="cart-lines"><div class="cart-empty">Loading your basket…</div></div>
+    <div class="cart-footer">
+      <div class="cart-subtotal"><span>Subtotal</span><strong id="cart-subtotal">£0.00</strong></div>
+      <p class="cart-note">Shipping and applicable taxes are calculated at Shopify checkout.</p>
+      <button class="cart-checkout" id="cart-checkout" type="button" disabled>Proceed to checkout</button>
+      <div class="cart-status" id="cart-status" role="status"></div>
+    </div>
+  </aside>
+</div>
+<button class="cart-btn" id="cart-btn" type="button">View basket</button>
+
 
 <script>
 /* ---------------- hero carousel ---------------- */
@@ -412,37 +464,168 @@ async function getProducts(handles, newest){
   return [...seen.values()];
 }
 
-/* ---------------- cart ---------------- */
-let cart = { id:null, checkoutUrl:null, qty:0 };
-try { const saved = JSON.parse(localStorage.getItem('wcg-cart') || 'null'); if (saved) cart = saved; } catch(e) {}
-function saveCart(){ try { localStorage.setItem('wcg-cart', JSON.stringify(cart)); } catch(e) {} updateCartButton(); }
+/* ---------------- Shopify basket ---------------- */
+let cart = { id:null, checkoutUrl:null, qty:0, lines:[], subtotal:0, currencyCode:'GBP' };
+try {
+  const saved = JSON.parse(localStorage.getItem('wcg-cart') || 'null');
+  if (saved && saved.id) cart = { ...cart, ...saved };
+} catch(e) {}
+
+const CART_FIELDS = `id checkoutUrl totalQuantity
+  cost { subtotalAmount { amount currencyCode } }
+  lines(first:50) { nodes {
+    id quantity
+    merchandise {
+      ... on ProductVariant {
+        id title
+        price { amount currencyCode }
+        product { title featuredImage { url altText } }
+      }
+    }
+  } }`;
+
+function saveCart(){
+  try { localStorage.setItem('wcg-cart', JSON.stringify(cart)); } catch(e) {}
+  updateCartButton();
+}
+function money(amount, currency='GBP'){
+  try { return new Intl.NumberFormat('en-GB', { style:'currency', currency }).format(Number(amount || 0)); }
+  catch(e) { return `£${Number(amount || 0).toFixed(2)}`; }
+}
 function updateCartButton(){
   const b = document.getElementById('cart-btn');
   b.style.display = cart.qty > 0 ? 'block' : 'none';
-  b.textContent = `Checkout (${cart.qty})`;
+  b.textContent = `View basket (${cart.qty})`;
+  document.getElementById('cart-heading-count').textContent = `(${cart.qty})`;
+}
+function cartError(message){
+  const status = document.getElementById('cart-status');
+  if (status) status.textContent = message || 'Something went wrong. Please try again.';
+}
+function openCart(){
+  document.getElementById('cart-overlay').classList.add('open');
+  document.getElementById('cart-overlay').setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  renderCart();
+}
+function closeCart(){
+  document.getElementById('cart-overlay').classList.remove('open');
+  document.getElementById('cart-overlay').setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+}
+function renderCart(){
+  const linesEl = document.getElementById('cart-lines');
+  const subtotalEl = document.getElementById('cart-subtotal');
+  const checkout = document.getElementById('cart-checkout');
+  document.getElementById('cart-heading-count').textContent = `(${cart.qty})`;
+  subtotalEl.textContent = money(cart.subtotal, cart.currencyCode);
+  checkout.disabled = !cart.checkoutUrl || !cart.qty;
+  if (!cart.lines || !cart.lines.length){
+    linesEl.innerHTML = '<div class="cart-empty">Your basket is empty.<br>Find something for your next game!</div>';
+    return;
+  }
+  linesEl.innerHTML = cart.lines.map(line => {
+    const variant = line.merchandise || {};
+    const product = variant.product || {};
+    const name = product.title || 'Product';
+    const variantName = variant.title && variant.title !== 'Default Title' ? variant.title : '';
+    const image = product.featuredImage && product.featuredImage.url;
+    const unitPrice = variant.price ? variant.price.amount : 0;
+    return `<div class="cart-line" data-line-id="${esc(line.id)}">
+      <div class="cart-line-image">${image ? `<img src="${esc(image)}" alt="${esc(product.featuredImage.altText || name)}">` : ICONS.product}</div>
+      <div>
+        <div class="cart-line-name">${esc(name)}</div>
+        ${variantName ? `<div class="cart-line-variant">${esc(variantName)}</div>` : ''}
+        <div class="cart-line-price">${money(unitPrice, variant.price && variant.price.currencyCode)}</div>
+        <div class="cart-line-actions">
+          <div class="qty-control">
+            <button type="button" data-action="decrease" aria-label="Decrease quantity">−</button>
+            <span>${line.quantity}</span>
+            <button type="button" data-action="increase" aria-label="Increase quantity">+</button>
+          </div>
+          <button type="button" class="cart-remove" data-action="remove">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function refreshCart(){
+  if (!LIVE || !cart.id) return;
+  const data = await shopifyQuery(`query($id:ID!){ cart(id:$id){ ${CART_FIELDS} } }`, { id:cart.id });
+  if (!data.cart){
+    cart = { id:null, checkoutUrl:null, qty:0, lines:[], subtotal:0, currencyCode:'GBP' };
+  } else {
+    const c = data.cart;
+    cart = {
+      id:c.id, checkoutUrl:c.checkoutUrl, qty:c.totalQuantity,
+      lines:c.lines.nodes, subtotal:Number(c.cost.subtotalAmount.amount),
+      currencyCode:c.cost.subtotalAmount.currencyCode
+    };
+  }
+  saveCart();
+  renderCart();
+}
+async function applyCartMutation(field, query, variables){
+  const result = (await shopifyQuery(query, variables))[field];
+  if (result.userErrors && result.userErrors.length) throw new Error(result.userErrors.map(e => e.message).join(', '));
+  if (!result.cart) throw new Error('Shopify could not update the basket.');
+  const c = result.cart;
+  cart = {
+    id:c.id, checkoutUrl:c.checkoutUrl, qty:c.totalQuantity,
+    lines:c.lines.nodes, subtotal:Number(c.cost.subtotalAmount.amount),
+    currencyCode:c.cost.subtotalAmount.currencyCode
+  };
+  saveCart();
+  renderCart();
+}
+async function changeCartLine(lineId, quantity){
+  const overlay = document.getElementById('cart-overlay');
+  overlay.classList.add('cart-busy');
+  cartError('Updating basket…');
+  try {
+    await applyCartMutation('cartLinesUpdate',
+      `mutation($cartId:ID!,$lines:[CartLineUpdateInput!]!){ cartLinesUpdate(cartId:$cartId, lines:$lines){ cart { ${CART_FIELDS} } userErrors { message } } }`,
+      { cartId:cart.id, lines:[{ id:lineId, quantity }] });
+    cartError('');
+  } catch(e) { cartError(e.message || 'Could not update the basket.'); }
+  finally { overlay.classList.remove('cart-busy'); }
+}
+async function removeCartLine(lineId){
+  const overlay = document.getElementById('cart-overlay');
+  overlay.classList.add('cart-busy');
+  cartError('Removing item…');
+  try {
+    await applyCartMutation('cartLinesRemove',
+      `mutation($cartId:ID!,$lineIds:[ID!]!){ cartLinesRemove(cartId:$cartId, lineIds:$lineIds){ cart { ${CART_FIELDS} } userErrors { message } } }`,
+      { cartId:cart.id, lineIds:[lineId] });
+    cartError('');
+  } catch(e) { cartError(e.message || 'Could not remove that item.'); }
+  finally { overlay.classList.remove('cart-busy'); }
 }
 async function addToCart(variantId, btn){
   if (!LIVE || !variantId) return;
   btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Adding…';
   try {
-    const lines = [{ merchandiseId: variantId, quantity: 1 }];
-    const CART = `cart{ id checkoutUrl totalQuantity }`;
-    let data;
-    if (!cart.id) {
-      data = (await shopifyQuery(`mutation($lines:[CartLineInput!]!){ cartCreate(input:{lines:$lines}){ ${CART} userErrors{ message } } }`, { lines })).cartCreate;
-    } else {
-      data = (await shopifyQuery(`mutation($id:ID!,$lines:[CartLineInput!]!){ cartLinesAdd(cartId:$id, lines:$lines){ ${CART} userErrors{ message } } }`, { id: cart.id, lines })).cartLinesAdd;
-    }
-    if (!data.cart) throw new Error('cart unavailable');
-    cart = { id: data.cart.id, checkoutUrl: data.cart.checkoutUrl, qty: data.cart.totalQuantity };
-    saveCart();
+    const lines = [{ merchandiseId:variantId, quantity:1 }];
+    const mutation = cart.id
+      ? `mutation($id:ID!,$lines:[CartLineInput!]!){ cartLinesAdd(cartId:$id, lines:$lines){ cart { ${CART_FIELDS} } userErrors { message } } }`
+      : `mutation($lines:[CartLineInput!]!){ cartCreate(input:{lines:$lines}){ cart { ${CART_FIELDS} } userErrors { message } } }`;
+    const field = cart.id ? 'cartLinesAdd' : 'cartCreate';
+    const variables = cart.id ? { id:cart.id, lines } : { lines };
+    await applyCartMutation(field, mutation, variables);
     btn.textContent = 'Added ✓';
-    setTimeout(() => { btn.textContent = 'Add'; btn.disabled = false; }, 1200);
-  } catch (e) {
-    cart = { id:null, checkoutUrl:null, qty:0 }; saveCart(); // stale cart: start fresh next tap
-    btn.textContent = 'Try again'; btn.disabled = false;
+    openCart();
+  } catch(e) {
+    btn.textContent = 'Try again';
+    console.error('Wild Coast Gaming basket error:', e);
+    alert(e.message || 'We could not add that item. Please try again.');
+  } finally {
+    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 1200);
   }
 }
+
 
 /* ---------------- state ---------------- */
 let branchPath = [];      // path of BRANCH nodes drilled into (drives which tiles CARDS shows)
@@ -625,9 +808,32 @@ function attachGlow(el){
   });
 }
 
-document.getElementById('cart-btn').addEventListener('click', () => { if (cart.checkoutUrl) window.location.href = cart.checkoutUrl; });
+document.getElementById('cart-btn').addEventListener('click', openCart);
+document.getElementById('cart-close').addEventListener('click', closeCart);
+document.getElementById('cart-overlay').addEventListener('click', e => {
+  if (e.target.id === 'cart-overlay') closeCart();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('cart-overlay').classList.contains('open')) closeCart();
+});
+document.getElementById('cart-lines').addEventListener('click', e => {
+  const button = e.target.closest('button[data-action]');
+  if (!button) return;
+  const row = button.closest('.cart-line');
+  const line = cart.lines.find(item => item.id === row.dataset.lineId);
+  if (!line) return;
+  if (button.dataset.action === 'remove') removeCartLine(line.id);
+  if (button.dataset.action === 'increase') changeCartLine(line.id, line.quantity + 1);
+  if (button.dataset.action === 'decrease') changeCartLine(line.id, line.quantity - 1);
+});
+document.getElementById('cart-checkout').addEventListener('click', () => {
+  if (cart.checkoutUrl) window.location.href = cart.checkoutUrl;
+});
 if (!LIVE) document.getElementById('demo-banner').style.display = 'block';
 updateCartButton();
+if (LIVE && cart.id) refreshCart().catch(e => {
+  console.warn('Could not refresh saved Shopify basket:', e);
+});
 renderCards();
 renderProducts();
 
