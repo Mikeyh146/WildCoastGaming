@@ -188,6 +188,7 @@
 <meta property="og:description" content="Tabletop, trading cards and miniatures in Pembrokeshire. Book a table or shop online.">
 <meta property="og:image" content="https://wildcoastgaming.co.uk/images/Wlogo.jpg">
 <meta property="og:type" content="website">
+<script src="/shop-config.js"></script>
 </head>
 <body>
 
@@ -309,7 +310,7 @@ const ICONS = {
 
 /* ---------------- Shopify connection ---------------- */
 const SHOPIFY_DOMAIN = 'wildcoastgaming-store.myshopify.com';
-const SHOPIFY_TOKEN  = '13bcb5408df60214e3f560bc1b7525c5';          // paste your PUBLIC Storefront API token here
+const SHOPIFY_TOKEN  = (window.WCG_CONFIG && window.WCG_CONFIG.token) || '';  // set in shop-config.js
 const SHOPIFY_API_VERSION = '2026-04'; // Shopify retires versions yearly, so bump this occasionally
 const LIVE = !!SHOPIFY_TOKEN;
 
@@ -383,10 +384,10 @@ const normalise = p => ({
 });
 
 const LEAF_NAMES = {};
-(function walk(children){ Object.values(children).forEach(n => { if (n.collection) LEAF_NAMES[n.collection] = n.name; else walk(n.children); }); })(CATALOG);
+(function walk(children){ Object.values(children).forEach(n => { if (n.collection) [].concat(n.collection).forEach(h => LEAF_NAMES[h] = n.name); else walk(n.children); }); })(CATALOG);
 
 function collectHandles(node){
-  if (node.collection) return [node.collection];
+  if (node.collection) return [].concat(node.collection);
   return Object.values(node.children).flatMap(collectHandles);
 }
 
@@ -402,10 +403,12 @@ async function getProducts(handles, newest){
     const data = await shopifyQuery(`{ products(first:8, sortKey:CREATED_AT, reverse:true){ nodes{ ${PRODUCT_FIELDS} } } }`);
     return data.products.nodes.map(normalise);
   }
-  const body = handles.map((h, i) => `c${i}: collection(handle:"${h}"){ products(first:24){ nodes{ ${PRODUCT_FIELDS} } } }`).join('\n');
+  const body = handles.map((h, i) => `c${i}: collection(${/^\d+$/.test(h) ? `id:"gid://shopify/Collection/${h}"` : `handle:"${h}"`}){ products(first:24){ nodes{ ${PRODUCT_FIELDS} } } }`).join('\n');
   const data = await shopifyQuery(`{ ${body} }`);
   const seen = new Map();
-  Object.values(data).forEach(c => { if (c) c.products.nodes.forEach(p => seen.set(p.id, normalise(p))); });
+  const vals = Object.values(data);
+  window.__wcgDebug = { asked: handles.length, found: vals.filter(Boolean).length };
+  vals.forEach(c => { if (c) c.products.nodes.forEach(p => seen.set(p.id, normalise(p))); });
   return [...seen.values()];
 }
 
@@ -544,6 +547,12 @@ function renderCards(){
 
 /* ---------------- render: products (always visible) ---------------- */
 let renderToken = 0;
+function showDebug(n){
+  if (!/[?&]debug/.test(location.search)) return;
+  const d = window.__wcgDebug || {};
+  const el = document.getElementById('products-sub');
+  el.textContent += ` [debug: token ${LIVE ? 'set' : 'MISSING'}, ${d.found !== undefined ? d.found + ' of ' + d.asked + ' collections found' : ''}${d.error ? ', error: ' + d.error : ''}, ${n} products]`;
+}
 async function renderProducts(){
   const token = ++renderToken;
   const currentNode = nodeAtPath(branchPath);
@@ -568,11 +577,13 @@ async function renderProducts(){
   try {
     products = contextNode ? await getProducts(collectHandles(contextNode), false) : await getProducts(null, true);
   } catch (e) {
-    if (token === renderToken) grid.innerHTML = '<div class="products-sub">Couldn\'t load products right now — please try again.</div>';
+    window.__wcgDebug = { error: String(e.message || e).slice(0, 300) };
+    if (token === renderToken) { grid.innerHTML = '<div class="products-sub">Couldn\'t load products right now — please try again.</div>'; showDebug(0); }
     return;
   }
   if (token !== renderToken) return; // a newer tap has taken over
 
+  showDebug(products.length);
   if (!products.length) { grid.innerHTML = '<div class="products-sub">Nothing here yet — check back soon.</div>'; return; }
   grid.innerHTML = '';
   products.forEach(p => {
